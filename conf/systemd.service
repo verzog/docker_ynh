@@ -5,8 +5,8 @@ After=docker.service
 
 [Service]
 Type=simple
-User=__USER__
-Group=__USER__
+User=__APP__
+Group=__APP__
 
 # Remove any leftover container from a previous run before starting
 ExecStartPre=-/usr/bin/docker rm -f __APP__
