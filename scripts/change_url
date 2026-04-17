@@ -1,124 +1,59 @@
 #!/bin/bash
 
+## this script is only run if actual change to domain/path is detected
+## new location is available via $domain and $path (or $new_domain and $new_path)
+## old values are available via $old_domain and $old_path
+
 source _common.sh
 source /usr/share/yunohost/helpers
 
 #=================================================
-# CHANGE URL OF DOCKER CONTAINER
+# STOP SYSTEMD SERVICE
 #=================================================
-ynh_script_progression --message="Updating app configuration for new URL..." --weight=1
+ynh_script_progression "Stopping $app's systemd service..."
 
-# Variables available: $old_domain, $new_domain, $old_path, $new_path
-# Booleans: $change_domain=0/1, $change_path=0/1
+ynh_systemctl --service="$app" --action="stop"
 
 #=================================================
 # CHECK IF DOCKER OPTIONS NEED UPDATING
 #=================================================
-ynh_script_progression --message="Checking Docker configuration..." --weight=1
+ynh_script_progression "Checking Docker configuration..."
 
-# Retrieve current docker_options from settings
 docker_options=$(ynh_app_setting_get --key=docker_options)
 
-# Flag to track if we need to prompt user
-needs_review=false
-
 if [ -n "$docker_options" ]; then
-    # Check if docker_options contain domain or path references that need updating
     if echo "$docker_options" | grep -qE "($old_domain|$old_path)"; then
-        needs_review=true
+        ynh_print_warn "Your Docker options contain references to the old URL."
+        ynh_print_warn "Current Docker options: $docker_options"
+        ynh_print_warn "You may need to update docker_options manually:"
+        ynh_print_warn "  yunohost app setting $app --key=docker_options --value=\"<new_options>\""
     fi
-fi
-
-#=================================================
-# PROMPT USER IF DOCKER OPTIONS NEED UPDATING
-#=================================================
-
-if [ "$needs_review" = true ]; then
-    ynh_print_warn ""
-    ynh_print_warn "⚠️  Your Docker options contain references to the old URL and may need updating:"
-    ynh_print_warn ""
-    if [ "$change_domain" -eq 1 ]; then
-        ynh_print_warn "  Old domain: $old_domain"
-        ynh_print_warn "  New domain: $new_domain"
-    fi
-    if [ "$change_path" -eq 1 ]; then
-        ynh_print_warn "  Old path: $old_path"
-        ynh_print_warn "  New path: $new_path"
-    fi
-    ynh_print_warn ""
-    ynh_print_warn "Current Docker options:"
-    ynh_print_warn "  $docker_options"
-    ynh_print_warn ""
-    
-    # Prompt user for action (interactive)
-    ynh_print_info "Do you want to review/update the Docker options now?"
-    ynh_print_info "  [Y]es - I will provide new options"
-    ynh_print_info "  [N]o - Keep current options and continue"
-    ynh_print_info "  [S]kip - Don't update Docker options"
-    
-    read -p "Choose an option (Y/N/S): " -r user_choice
-    user_choice=$(echo "$user_choice" | tr '[:upper:]' '[:lower:]')
-    
-    case "$user_choice" in
-        y|yes)
-            ynh_print_info ""
-            ynh_print_info "Enter new Docker options (or press Enter to keep current):"
-            ynh_print_info "Example: -p 127.0.0.1:8080:80 -e DOMAIN=$new_domain"
-            read -r new_docker_options
-            
-            if [ -n "$new_docker_options" ]; then
-                docker_options="$new_docker_options"
-                ynh_app_setting_set --key=docker_options --value="$docker_options"
-                ynh_print_info "✓ Docker options updated"
-            else
-                ynh_print_info "Docker options unchanged"
-            fi
-            ;;
-        n|no)
-            ynh_print_info "Keeping current Docker options"
-            ynh_print_info "⚠️  Remember to manually update them if needed:"
-            ynh_print_info "  yunohost app setting $app --key=docker_options --value=\"<new_options>\""
-            ;;
-        s|skip)
-            ynh_print_info "Skipping Docker options update"
-            ;;
-        *)
-            ynh_print_warn "Invalid choice. Keeping current options."
-            ;;
-    esac
-    
-    ynh_print_warn ""
-else
-    ynh_print_info "Docker options do not contain URL references; no update needed."
 fi
 
 #=================================================
 # UPDATE SYSTEMD SERVICE CONFIGURATION
 #=================================================
-ynh_script_progression --message="Regenerating systemd service configuration..." --weight=1
+ynh_script_progression "Regenerating systemd service configuration..."
 
-# Regenerate systemd service to capture any domain/path changes
-# (useful if docker_options contains domain-specific references)
-ynh_add_systemd_config
+ynh_config_add_systemd
 
 systemctl daemon-reload
 
 #=================================================
-# RESTART SERVICE
+# START SYSTEMD SERVICE
 #=================================================
-ynh_script_progression --message="Restarting Docker container with new configuration..." --weight=1
+ynh_script_progression "Starting $app's systemd service..."
 
-ynh_systemctl --service="$app" --action="restart"
+ynh_systemctl --service="$app" --action="start"
 
-# Give container a moment to start
 sleep 2
 
 if ! ynh_systemctl --service="$app" --action="is-active" &>/dev/null; then
-    ynh_print_warn "⚠️  Container may have exited immediately. Check logs:"
+    ynh_print_warn "Container may have exited immediately. Check logs:"
     ynh_print_warn "  journalctl -u $app -n 50"
 fi
 
 #=================================================
 # END OF SCRIPT
 #=================================================
-ynh_script_progression --message="URL change for $app completed" --weight=1
+ynh_script_progression "Change of URL completed for $app"

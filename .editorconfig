@@ -6,15 +6,14 @@ end_of_line = lf
 indent_size = 4
 indent_style = space
 insert_final_newline = true
+spelling_language = en-US
 trim_trailing_whitespace = true
 
-[*.sh]
-indent_style = space
-indent_size = 4
+[*.md]
+trim_trailing_whitespace = false
 
-[*.toml]
-indent_style = space
-indent_size = 4
+[**_fr.md]
+spelling_language = fr-FR
 
 [Makefile]
 indent_style = tab
