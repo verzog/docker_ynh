@@ -13,15 +13,15 @@ maintainers = []
 
 [upstream]
 license = "WTFPL"
-code = "https://github.com/verzog/docker_container_ynh"
+code = "https://github.com/verzog/docker_ynh"
 
 [integration]
 yunohost = ">= 12.1.17"
 helpers_version = "2.1"
 architectures = "all"
 multi_instance = true
-ldap = false
-sso = false
+ldap = "not_relevant"
+sso = "not_relevant"
 disk = "500M"
 ram.build = "200M"
 ram.runtime = "200M"
@@ -44,7 +44,10 @@ ram.runtime = "200M"
     ask.en = "Should the container automatically restart if it stops?"
     ask.fr = "Le conteneur doit-il redémarrer automatiquement s'il s'arrête ?"
     type = "select"
-    choices = ["always", "unless-stopped", "on-failure", "no"]
+    choices.always = "Always"
+    choices.unless-stopped = "Unless stopped (recommended)"
+    choices.on-failure = "On failure only"
+    choices.no = "Never"
     default = "unless-stopped"
 
     [install.use_data_volume]
