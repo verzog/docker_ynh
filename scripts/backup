@@ -1,0 +1,57 @@
+#!/bin/bash
+
+source _common.sh
+source /usr/share/yunohost/helpers
+
+#=================================================
+# STOP CONTAINER BEFORE BACKUP
+#=================================================
+ynh_script_progression --message="Stopping container before backup..." --weight=1
+
+ynh_systemctl --service="$app" --action="stop"
+
+# Give container time to flush any pending writes
+sleep 2
+
+#=================================================
+# BACKUP DATA DIRECTORY
+#=================================================
+ynh_script_progression --message="Backing up persistent data volume..." --weight=2
+
+# Only backup if data volume is mounted
+use_data_volume=$(ynh_app_setting_get --key=use_data_volume)
+
+if [ "$use_data_volume" -eq 1 ]; then
+    ynh_backup --src_path="$data_dir" --dest_path="data"
+    ynh_print_info "Backed up mounted /data volume"
+else
+    ynh_print_info "No data volume mounted; skipping data backup"
+fi
+
+#=================================================
+# BACKUP SYSTEMD SERVICE CONFIGURATION
+#=================================================
+ynh_script_progression --message="Backing up service configuration..." --weight=1
+
+ynh_backup --src_path="/etc/systemd/system/$app.service" --dest_path="systemd-service"
+
+#=================================================
+# BACKUP INSTALL SETTINGS
+#=================================================
+ynh_script_progression --message="Backing up installation settings..." --weight=1
+
+# YunoHost automatically backs up /etc/yunohost/apps/$app/settings.yml
+# but we can also explicitly back up settings if needed for clarity
+ynh_backup --src_path="/etc/yunohost/apps/$app/settings.yml" --dest_path="settings"
+
+#=================================================
+# RESTART CONTAINER
+#=================================================
+ynh_script_progression --message="Restarting container after backup..." --weight=1
+
+ynh_systemctl --service="$app" --action="start"
+
+#=================================================
+# END OF SCRIPT
+#=================================================
+ynh_script_progression --message="Backup of $app completed" --weight=1

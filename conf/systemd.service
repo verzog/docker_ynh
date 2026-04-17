@@ -1,0 +1,32 @@
+[Unit]
+Description=Docker container: __CONTAINER_NAME__ (__IMAGE__) - YunoHost app __APP__
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=simple
+User=root
+
+# Remove any leftover container from a previous run before starting
+ExecStartPre=-/usr/bin/docker rm -f __APP__
+
+# Run the container in the foreground so systemd tracks it; --rm cleans up on stop
+# Mount timezone so container sees host's local time
+ExecStart=/usr/bin/docker run \
+    --rm \
+    --name=__APP__ \
+    --log-driver=journald \
+    --log-opt tag=__APP__ \
+    -e TZ=UTC \
+    --volume /etc/timezone:/etc/timezone:ro \
+    __DOCKER_VOLUME_OPTS__ \
+    __DOCKER_OPTIONS__ \
+    __IMAGE__
+
+ExecStop=/usr/bin/docker stop __APP__
+
+Restart=__SYSTEMD_RESTART__
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,101 @@
+#!/bin/bash
+
+source _common.sh
+source /usr/share/yunohost/helpers
+
+#=================================================
+# ENSURE DOCKER IS AVAILABLE
+#=================================================
+ynh_script_progression --message="Checking Docker availability..." --weight=1
+
+if ! command -v docker &>/dev/null; then
+    ynh_die "Docker is not installed. Please install docker.io before restoring this app."
+fi
+
+#=================================================
+# PULL DOCKER IMAGE WITH RETRY LOGIC
+#=================================================
+ynh_script_progression --message="Pulling Docker image $image..." --weight=2
+
+pull_success=false
+for attempt in 1 2 3; do
+    if docker pull "$image" 2>&1; then
+        pull_success=true
+        break
+    fi
+    
+    if [ $attempt -lt 3 ]; then
+        ynh_print_warn "Pull attempt $attempt failed. Retrying in 5 seconds..."
+        sleep 5
+    fi
+done
+
+if [ "$pull_success" = false ]; then
+    ynh_die "Failed to pull Docker image '$image' after 3 attempts during restore."
+fi
+
+#=================================================
+# RESTORE DATA DIRECTORY
+#=================================================
+ynh_script_progression --message="Restoring persistent data volume..." --weight=2
+
+# Check backup for data directory
+if [ -d "$YNH_APP_BACKUP_DIR/data" ]; then
+    ynh_restore --src_path="data" --dest_path="$data_dir"
+    ynh_print_info "Restored /data volume"
+else
+    ynh_print_info "No data volume backup found; skipping data restore"
+fi
+
+#=================================================
+# RESTORE SYSTEMD SERVICE CONFIGURATION
+#=================================================
+ynh_script_progression --message="Restoring systemd service configuration..." --weight=1
+
+ynh_restore --src_path="systemd-service" --dest_path="/etc/systemd/system/$app.service"
+
+systemctl daemon-reload
+systemctl enable "$app.service" --quiet
+
+#=================================================
+# RESTORE INSTALLATION SETTINGS
+#=================================================
+ynh_script_progression --message="Restoring installation settings..." --weight=1
+
+# YunoHost automatically restores /etc/yunohost/apps/$app/settings.yml
+# but explicit restore can ensure consistency
+if [ -f "$YNH_APP_BACKUP_DIR/settings" ]; then
+    ynh_restore --src_path="settings" --dest_path="/etc/yunohost/apps/$app/settings.yml"
+fi
+
+#=================================================
+# REGISTER SERVICE WITH YUNOHOST
+#=================================================
+ynh_script_progression --message="Registering service with YunoHost..." --weight=1
+
+# Retrieve stored metadata from settings
+container_name=$(ynh_app_setting_get --key=container_name)
+image=$(ynh_app_setting_get --key=image)
+
+yunohost service add "$app" \
+    --description="Docker container: $container_name ($image)" \
+    --log="journalctl -u $app -o cat"
+
+#=================================================
+# START SERVICE
+#=================================================
+ynh_script_progression --message="Starting Docker container..." --weight=2
+
+ynh_systemctl --service="$app" --action="start"
+
+sleep 2
+
+if ! ynh_systemctl --service="$app" --action="is-active" &>/dev/null; then
+    ynh_print_warn "⚠️  Container started but exited immediately. Check logs with:"
+    ynh_print_warn "  journalctl -u $app -n 50"
+fi
+
+#=================================================
+# END OF SCRIPT
+#=================================================
+ynh_script_progression --message="Restoration of $app completed" --weight=1

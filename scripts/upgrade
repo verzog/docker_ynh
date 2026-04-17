@@ -1,0 +1,79 @@
+#!/bin/bash
+
+source _common.sh
+source /usr/share/yunohost/helpers
+
+#=================================================
+# STOP SERVICE
+#=================================================
+ynh_script_progression --message="Stopping $app's systemd service..." --weight=1
+
+ynh_systemctl --service="$app" --action="stop"
+
+#=================================================
+# PULL LATEST IMAGE WITH RETRY LOGIC
+#=================================================
+ynh_script_progression --message="Pulling latest Docker image $image..." --weight=2
+
+# Same retry logic as install script
+pull_success=false
+for attempt in 1 2 3; do
+    if docker pull "$image" 2>&1; then
+        pull_success=true
+        break
+    fi
+    
+    if [ $attempt -lt 3 ]; then
+        ynh_print_warn "Pull attempt $attempt failed. Retrying in 5 seconds..."
+        sleep 5
+    fi
+done
+
+if [ "$pull_success" = false ]; then
+    ynh_die "Failed to pull Docker image '$image' after 3 attempts."
+fi
+
+# Remove the old container so the next start uses the fresh image
+docker rm "$app" 2>/dev/null || true
+
+#=================================================
+# RETRIEVE AND RECOMPUTE RUN CONFIGURATION
+#=================================================
+ynh_script_progression --message="Reapplying container configuration..." --weight=1
+
+# Retrieve stored settings
+restart_policy=$(ynh_app_setting_get --key=restart_policy)
+use_data_volume=$(ynh_app_setting_get --key=use_data_volume)
+
+# Recompute configuration in case install settings have changed
+compute_docker_config "$restart_policy" "$use_data_volume" "$data_dir"
+
+# Update stored settings with any computed changes
+ynh_app_setting_set --key=systemd_restart --value="$systemd_restart"
+ynh_app_setting_set --key=docker_volume_opts --value="$docker_volume_opts"
+
+#=================================================
+# REAPPLY SYSTEMD CONFIGURATION
+#=================================================
+ynh_script_progression --message="Upgrading system configurations..." --weight=1
+
+ynh_config_add_systemd
+
+yunohost service add "$app" \
+    --description="Docker container: $container_name ($image)" \
+    --log="journalctl -u $app -o cat"
+
+#=================================================
+# START SERVICE
+#=================================================
+ynh_script_progression --message="Starting $app's systemd service..." --weight=2
+
+ynh_systemctl --service="$app" --action="start"
+
+# Give container a moment to start
+sleep 2
+
+#=================================================
+# END OF SCRIPT
+#=================================================
+ynh_script_progression --message="Upgrade of $app completed" --weight=1

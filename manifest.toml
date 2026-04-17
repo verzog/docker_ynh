@@ -1,0 +1,65 @@
+packaging_format = 2
+
+id = "docker_container"
+name = "Docker Container"
+description.en = "Deploy and manage a Docker container on your YunoHost server"
+description.fr = "Déployez et gérez un conteneur Docker sur votre serveur YunoHost"
+
+version = "1.0~ynh1"
+
+maintainers = []
+
+[upstream]
+license = "WTFPL"
+code = "https://github.com/verzog/docker_container_ynh"
+
+[integration]
+yunohost = ">= 12.1.17"
+architectures = "all"
+multi_instance = true
+ldap = false
+sso = false
+disk = "500M"
+ram.build = "200M"
+ram.runtime = "200M"
+
+[install]
+
+    [install.container_name]
+    ask.en = "Choose a short name for this container (letters, numbers, hyphens)"
+    ask.fr = "Choisissez un nom court pour ce conteneur (lettres, chiffres, tirets)"
+    type = "string"
+    example = "my-app"
+
+    [install.image]
+    ask.en = "Docker image to pull (e.g. nginx:latest, from hub.docker.com)"
+    ask.fr = "Image Docker à télécharger (ex: nginx:latest, depuis hub.docker.com)"
+    type = "string"
+    example = "nginx:latest"
+
+    [install.restart_policy]
+    ask.en = "Should the container automatically restart if it stops?"
+    ask.fr = "Le conteneur doit-il redémarrer automatiquement s'il s'arrête ?"
+    type = "select"
+    choices = ["always", "unless-stopped", "on-failure", "no"]
+    default = "unless-stopped"
+
+    [install.use_data_volume]
+    ask.en = "Mount a persistent data directory into the container at /data?"
+    ask.fr = "Monter un répertoire de données persistant dans le conteneur à /data ?"
+    type = "boolean"
+    default = true
+
+    [install.docker_options]
+    ask.en = "Additional Docker options (port mappings, env vars, extra volumes). Leave empty if unsure."
+    ask.fr = "Options Docker supplémentaires (ports, variables d'environnement, volumes). Laissez vide si incertain."
+    type = "string"
+    example = "-p 127.0.0.1:8080:80 -e MY_VAR=value"
+    optional = true
+    default = ""
+
+[resources]
+
+    [resources.system_user]
+
+    [resources.data_dir]

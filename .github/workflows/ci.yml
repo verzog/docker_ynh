@@ -1,0 +1,113 @@
+name: YunoHost App CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        yunohost: [ "11.2", "12.1" ]
+    
+    steps:
+    - name: Checkout package repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install YunoHost testing tools
+      run: |
+        pip install yunohost-app-ci
+
+    - name: Run YunoHost app CI tests
+      run: |
+        yunohost-app-ci tests.toml
+
+    - name: Check packaging format
+      run: |
+        # Verify manifest.toml is valid TOML
+        python3 -c "import tomllib; tomllib.load(open('manifest.toml', 'rb'))"
+        
+        # Check required fields in manifest
+        grep -q "packaging_format = 2" manifest.toml
+        grep -q 'id = "docker_container"' manifest.toml
+
+    - name: Lint scripts
+      run: |
+        # Check for shellcheck issues in bash scripts
+        for script in scripts/*; do
+          if [ -f "$script" ] && [ ! -x "$script" ]; then
+            chmod +x "$script"
+          fi
+          if [ -f "$script" ]; then
+            shellcheck "$script" || echo "Warning: $script has shellcheck issues"
+          fi
+        done
+
+    - name: Verify documentation
+      run: |
+        # Ensure documentation files exist
+        [ -f "doc/DESCRIPTION.md" ] || echo "Missing: doc/DESCRIPTION.md"
+        [ -f "doc/PRE_INSTALL.md" ] || echo "Missing: doc/PRE_INSTALL.md"
+        [ -f "doc/ADMIN.md" ] || echo "Missing: doc/ADMIN.md"
+        [ -f "README.md" ] || echo "Missing: README.md"
+
+  syntax-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check bash syntax
+      run: |
+        for script in scripts/*; do
+          if [ -f "$script" ]; then
+            bash -n "$script" || exit 1
+          fi
+        done
+
+    - name: Validate TOML
+      run: |
+        python3 -c "import tomllib; tomllib.load(open('manifest.toml', 'rb'))"
+        python3 -c "import tomllib; tomllib.load(open('tests.toml', 'rb'))"
+
+    - name: Check for required files
+      run: |
+        required_files=(
+          "manifest.toml"
+          "README.md"
+          "LICENSE"
+          ".editorconfig"
+          "scripts/install"
+          "scripts/remove"
+          "scripts/upgrade"
+          "scripts/backup"
+          "scripts/restore"
+          "scripts/change_url"
+          "scripts/_common.sh"
+          "conf/systemd.service"
+          "doc/DESCRIPTION.md"
+          "doc/PRE_INSTALL.md"
+          "doc/ADMIN.md"
+          "tests.toml"
+        )
+        
+        missing=0
+        for file in "${required_files[@]}"; do
+          if [ ! -f "$file" ]; then
+            echo "❌ Missing: $file"
+            missing=1
+          fi
+        done
+        
+        if [ $missing -eq 0 ]; then
+          echo "✅ All required files present"
+        else
+          exit 1
+        fi
