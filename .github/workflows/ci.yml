@@ -10,5 +10,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: YunoHost-Apps/package_linter@master
-        id: package_linter
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run YunoHost package linter
+        run: |
+          git clone --depth=1 https://github.com/YunoHost/package_linter /tmp/package_linter
+          pip install -r /tmp/package_linter/requirements.txt
+          python3 /tmp/package_linter/package_linter.py .
+
+      - name: Check bash syntax
+        run: |
+          for script in scripts/*; do
+            [ -f "$script" ] && bash -n "$script"
+          done
+
+      - name: Shellcheck
+        run: |
+          shellcheck scripts/install scripts/remove scripts/upgrade \
+            scripts/backup scripts/restore scripts/change_url \
+            scripts/config scripts/_common.sh || true
