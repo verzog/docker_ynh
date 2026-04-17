@@ -6,29 +6,25 @@ source /usr/share/yunohost/helpers
 #=================================================
 # REMOVE YUNOHOST SERVICE INTEGRATION
 #=================================================
-ynh_script_progression --message="Removing system integrations..." --weight=1
+ynh_script_progression "Removing system integrations..."
 
-# Remove from YunoHost service management (safe if service doesn't exist)
 yunohost service remove "$app" 2>/dev/null || true
 
-# Remove systemd service file
 ynh_config_remove_systemd
 
 #=================================================
 # STOP AND REMOVE DOCKER CONTAINER
 #=================================================
-ynh_script_progression --message="Stopping and removing Docker container..." --weight=1
+ynh_script_progression "Stopping and removing Docker container..."
 
-# Stop the container gracefully with a timeout
 if docker ps --filter "name=^${app}$" --format "{{.ID}}" 2>/dev/null | grep -q .; then
     docker stop "$app" 2>/dev/null || true
     sleep 1
 fi
 
-# Remove the stopped container
 docker rm "$app" 2>/dev/null || true
 
 #=================================================
 # END OF SCRIPT
 #=================================================
-ynh_script_progression --message="Removal of $app completed" --weight=1
+ynh_script_progression "Removal of $app completed"

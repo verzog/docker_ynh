@@ -5,13 +5,13 @@ After=docker.service
 
 [Service]
 Type=simple
-User=root
+User=__USER__
+Group=__USER__
 
 # Remove any leftover container from a previous run before starting
 ExecStartPre=-/usr/bin/docker rm -f __APP__
 
-# Run the container in the foreground so systemd tracks it; --rm cleans up on stop
-# Mount timezone so container sees host's local time
+# Run the container in the foreground so systemd tracks it
 ExecStart=/usr/bin/docker run \
     --rm \
     --name=__APP__ \
@@ -27,6 +27,22 @@ ExecStop=/usr/bin/docker stop __APP__
 
 Restart=__SYSTEMD_RESTART__
 RestartSec=10
+
+### Security hardening
+### Note: many standard systemd hardening options (PrivateDevices, RestrictNamespaces,
+### NoNewPrivileges, SystemCallFilter) are intentionally omitted here because they are
+### incompatible with running Docker containers, which require namespace access and
+### elevated capabilities. The service is run as a dedicated system user in the
+### docker group rather than root, which is the primary privilege reduction for this app.
+
+# Basic protections that are safe with Docker
+PrivateTmp=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target

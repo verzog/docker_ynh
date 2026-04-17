@@ -1,3 +1,5 @@
+#:schema https://raw.githubusercontent.com/YunoHost/apps/main/schemas/manifest.v2.schema.json
+
 packaging_format = 2
 
 id = "docker_container"
@@ -15,6 +17,7 @@ code = "https://github.com/verzog/docker_container_ynh"
 
 [integration]
 yunohost = ">= 12.1.17"
+helpers_version = "2.1"
 architectures = "all"
 multi_instance = true
 ldap = false
