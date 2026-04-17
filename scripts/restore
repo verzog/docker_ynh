@@ -4,6 +4,13 @@ source ../settings/scripts/_common.sh
 source /usr/share/yunohost/helpers
 
 #=================================================
+# GRANT APP USER ACCESS TO DOCKER
+#=================================================
+ynh_script_progression "Configuring system user..."
+
+usermod -aG docker "$app"
+
+#=================================================
 # ENSURE DOCKER IS AVAILABLE
 #=================================================
 ynh_script_progression "Checking Docker availability..."

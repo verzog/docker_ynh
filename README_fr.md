@@ -1,58 +1,47 @@
+<!--
+N.B.: Ce README est automatiquement généré par https://github.com/YunoHost/apps/tree/main/tools/README-generator
+Il ne doit pas être édité à la main.
+-->
+
 # Docker Container pour YunoHost
 
-> **Avertissement :** Cette application est destinée aux utilisateurs avancés. Les conteneurs Docker ne sont pas intégrés au SSO ou au LDAP de YunoHost — utilisez des applications YunoHost natives quand elles sont disponibles.
+[![Niveau d'intégration](https://dash.yunohost.org/integration/docker_container.svg)](https://ci-apps.yunohost.org/ci/apps/docker_container/)
+[![Installer Docker Container avec YunoHost](https://install-app.yunohost.org/install-with-yunohost.svg)](https://install-app.yunohost.org/?app=docker_container)
 
-## Que fait cette application ?
+*[Read this README in english.](./README.md)*
 
-Ce paquet YunoHost vous permet de télécharger n'importe quelle image Docker depuis [hub.docker.com](https://hub.docker.com) et de l'exécuter comme un service systemd géré sur votre serveur YunoHost. Chaque instance exécute un conteneur et est gérée indépendamment via le panneau d'administration YunoHost ou la CLI.
+> *Ce package vous permet d'installer Docker Container rapidement et simplement sur un serveur YunoHost.
+> Si vous n'avez pas YunoHost, consultez [ce guide](https://yunohost.org/install) pour savoir comment l'installer et en profiter.*
 
-Fonctionnalités :
-- Télécharger n'importe quelle image Docker publique
-- Gestion du conteneur comme un service systemd (démarrage/arrêt/redémarrage depuis la page Services de YunoHost)
-- Répertoire de données persistant optionnel monté à `/data` dans le conteneur
-- Passage d'options Docker personnalisées (ports, variables d'environnement, volumes supplémentaires)
-- Multi-instance : déployez autant de conteneurs que nécessaire
-- Politique de redémarrage configurable
+## Vue d'ensemble
 
-## Limitations
+Déployez et gérez un conteneur Docker sur votre serveur YunoHost
 
-- Aucune intégration SSO ou LDAP — les conteneurs s'exécutent indépendamment
-- Ne fonctionne **pas** si YunoHost lui-même tourne dans un conteneur Docker
-- La mise à jour de l'image nécessite d'exécuter l'action de mise à jour YunoHost (qui re-télécharge `latest` ou le tag épinglé)
-- La sauvegarde couvre uniquement le volume `/data` monté ; les données stockées exclusivement à l'intérieur du conteneur ne sont pas sauvegardées
+**Version incluse :** 1.0~ynh1
 
-## Installation
+## Avertissements / informations importantes
 
-Depuis le panneau d'administration YunoHost ou la CLI :
+- Docker doit être installé sur le serveur avant d'installer cette app (`sudo apt install docker.io`)
+- Cette app ne s'intègre **pas** avec le SSO/LDAP de YunoHost — les conteneurs sont des services indépendants
+- Cette app ne fonctionnera **pas** si YunoHost lui-même s'exécute dans un conteneur Docker
+- Seules les données stockées dans le volume `/data` monté sont incluses dans les sauvegardes YunoHost
+- L'action de mise à jour re-télécharge l'image et recrée le conteneur
 
-```bash
-yunohost app install https://github.com/verzog/docker_container_ynh
-```
+## Documentations et ressources
 
-Vous serez invité à saisir :
+- YunoHost Store : <https://apps.yunohost.org/app/docker_container>
+- Signaler un bug : <https://github.com/verzog/docker_ynh/issues>
 
-| Paramètre | Description |
-|---|---|
-| `container_name` | Étiquette lisible pour ce conteneur |
-| `image` | Image Docker (ex : `nginx:latest`) |
-| `restart_policy` | `always`, `unless-stopped`, `on-failure` ou `no` |
-| `use_data_volume` | Monter `$data_dir` à `/data` dans le conteneur |
-| `docker_options` | Options `docker run` supplémentaires (ports, variables, volumes) |
+## Informations pour les développeurs
 
-## Gestion du conteneur
+Merci de faire vos pull request sur la [branche testing](https://github.com/verzog/docker_ynh/tree/testing).
+
+Pour essayer la branche testing, procédez comme suit :
 
 ```bash
-# Démarrer / arrêter / redémarrer
-yunohost service start docker_container
-yunohost service stop docker_container
-
-# Consulter les journaux
-journalctl -u docker_container -f
-
-# Entrer dans le conteneur en cours d'exécution
-docker exec -it docker_container bash
+sudo yunohost app install https://github.com/verzog/docker_ynh/tree/testing --debug
+ou
+sudo yunohost app upgrade docker_container -u https://github.com/verzog/docker_ynh/tree/testing --debug
 ```
 
-## Contribuer
-
-Les pull requests sont bienvenues sur <https://github.com/verzog/docker_container_ynh>.
+**Plus d'infos sur le packaging d'applications :** <https://yunohost.org/packaging_apps>

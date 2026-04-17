@@ -4,6 +4,15 @@ source _common.sh
 source /usr/share/yunohost/helpers
 
 #=================================================
+# GRANT APP USER ACCESS TO DOCKER
+#=================================================
+ynh_script_progression "Configuring system user..."
+
+# Add the app system user to the docker group so it can run docker commands
+# without requiring root. The systemd service runs as this user.
+usermod -aG docker "$app"
+
+#=================================================
 # ENSURE DOCKER IS AVAILABLE
 #=================================================
 ynh_script_progression "Checking Docker availability..."
