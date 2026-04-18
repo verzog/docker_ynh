@@ -15,6 +15,7 @@ ExecStartPre=-/usr/bin/docker rm -f __APP__
 # Port mapping is automatic: host port __PORT__ -> container port __CONTAINER_PORT__
 ExecStart=/usr/bin/docker run \
     --rm \
+    --restart=__DOCKER_RESTART_POLICY__ \
     --name=__APP__ \
     --log-driver=journald \
     --log-opt tag=__APP__ \
@@ -27,10 +28,8 @@ ExecStart=/usr/bin/docker run \
 
 ExecStop=-/usr/bin/docker stop __APP__
 
-Restart=__SYSTEMD_RESTART__
+Restart=no
 RestartSec=10
-StartLimitIntervalSec=120
-StartLimitBurst=5
 
 ### Security hardening
 ### Note: PrivateDevices, RestrictNamespaces, NoNewPrivileges, SystemCallFilter are

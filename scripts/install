@@ -54,7 +54,7 @@ ynh_script_progression "Computing container configuration..."
 compute_docker_config "$restart_policy" "$use_data_volume" "$data_dir"
 
 ynh_app_setting_set --key=container_port --value="$container_port"
-ynh_app_setting_set --key=systemd_restart --value="$systemd_restart"
+ynh_app_setting_set --key=docker_restart_policy --value="$docker_restart_policy"
 ynh_app_setting_set --key=docker_volume_opts --value="$docker_volume_opts"
 ynh_app_setting_set --key=restart_policy --value="$restart_policy"
 ynh_app_setting_set --key=use_data_volume --value="$use_data_volume"
