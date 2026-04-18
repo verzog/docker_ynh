@@ -85,6 +85,7 @@ ram.runtime = "200M"
 
     [resources.permissions]
     main.url = "/"
+    main.auth_header = false
 
     [resources.ports]
     main.default = 8095
