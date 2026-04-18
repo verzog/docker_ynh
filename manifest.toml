@@ -20,25 +20,36 @@ yunohost = ">= 12.1.17"
 helpers_version = "2.1"
 architectures = "all"
 multi_instance = true
-ldap = "not_relevant"
-sso = "not_relevant"
+ldap = false
+sso = false
 disk = "500M"
 ram.build = "200M"
 ram.runtime = "200M"
 
 [install]
 
-    [install.container_name]
-    ask.en = "Choose a short name for this container (letters, numbers, hyphens)"
-    ask.fr = "Choisissez un nom court pour ce conteneur (lettres, chiffres, tirets)"
-    type = "string"
-    example = "my-app"
+    [install.domain]
+    type = "domain"
+
+    [install.path]
+    type = "path"
+    default = "/app"
+
+    [install.init_main_permission]
+    type = "group"
+    default = "visitors"
 
     [install.image]
-    ask.en = "Docker image to pull (e.g. nginx:latest, from hub.docker.com)"
-    ask.fr = "Image Docker à télécharger (ex: nginx:latest, depuis hub.docker.com)"
+    ask.en = "Docker image to pull (e.g. nginx:alpine, from hub.docker.com)"
+    ask.fr = "Image Docker à télécharger (ex: nginx:alpine, depuis hub.docker.com)"
     type = "string"
-    example = "nginx:latest"
+    example = "nginx:alpine"
+
+    [install.container_port]
+    ask.en = "Which port does the container expose internally? (e.g. 80 for nginx, 8080 for many Java apps)"
+    ask.fr = "Sur quel port le conteneur écoute-t-il en interne ? (ex: 80 pour nginx, 8080 pour les apps Java)"
+    type = "number"
+    default = 80
 
     [install.restart_policy]
     ask.en = "Should the container automatically restart if it stops?"
@@ -57,10 +68,10 @@ ram.runtime = "200M"
     default = true
 
     [install.docker_options]
-    ask.en = "Additional Docker options (port mappings, env vars, extra volumes). Leave empty if unsure."
-    ask.fr = "Options Docker supplémentaires (ports, variables d'environnement, volumes). Laissez vide si incertain."
+    ask.en = "Additional Docker options (env vars, extra volumes, etc.). Do not add port mappings here."
+    ask.fr = "Options Docker supplémentaires (variables d'environnement, volumes, etc.). Ne pas ajouter de ports ici."
     type = "string"
-    example = "-p 127.0.0.1:8080:80 -e MY_VAR=value"
+    example = "-e MY_VAR=value -e ANOTHER_VAR=other"
     optional = true
     default = ""
 
@@ -69,3 +80,10 @@ ram.runtime = "200M"
     [resources.system_user]
 
     [resources.data_dir]
+
+    [resources.permissions]
+    main.url = "/"
+
+    [resources.ports]
+    main.default = 8095
+

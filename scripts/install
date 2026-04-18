@@ -8,8 +8,6 @@ source /usr/share/yunohost/helpers
 #=================================================
 ynh_script_progression "Configuring system user..."
 
-# Add the app system user to the docker group so it can run docker commands
-# without requiring root. The systemd service runs as this user.
 usermod -aG docker "$app"
 
 #=================================================
@@ -18,7 +16,7 @@ usermod -aG docker "$app"
 ynh_script_progression "Checking Docker availability..."
 
 if ! command -v docker &>/dev/null; then
-    ynh_die "Docker is not installed. Please install docker.io via your package manager before using this app."
+    ynh_die "Docker is not installed. Please install docker.io before using this app."
 fi
 
 if ! ynh_systemctl --service="docker" --action="is-active" &>/dev/null; then
@@ -27,7 +25,7 @@ if ! ynh_systemctl --service="docker" --action="is-active" &>/dev/null; then
 fi
 
 #=================================================
-# PULL DOCKER IMAGE WITH RETRY LOGIC
+# PULL DOCKER IMAGE
 #=================================================
 ynh_script_progression "Pulling Docker image $image..."
 
@@ -45,12 +43,7 @@ for attempt in 1 2 3; do
 done
 
 if [ "$pull_success" = false ]; then
-    ynh_die "Failed to pull Docker image '$image' after 3 attempts. Check that:
-  - The image exists on Docker Hub (or your registry)
-  - Your internet connection is working
-  - Docker daemon is running
-
-  You can manually test with: docker pull $image"
+    ynh_die "Failed to pull Docker image '$image' after 3 attempts."
 fi
 
 #=================================================
@@ -60,10 +53,18 @@ ynh_script_progression "Computing container configuration..."
 
 compute_docker_config "$restart_policy" "$use_data_volume" "$data_dir"
 
+ynh_app_setting_set --key=container_port --value="$container_port"
 ynh_app_setting_set --key=systemd_restart --value="$systemd_restart"
 ynh_app_setting_set --key=docker_volume_opts --value="$docker_volume_opts"
 ynh_app_setting_set --key=restart_policy --value="$restart_policy"
 ynh_app_setting_set --key=use_data_volume --value="$use_data_volume"
+
+#=================================================
+# CONFIGURE NGINX
+#=================================================
+ynh_script_progression "Configuring NGINX web server..."
+
+ynh_add_nginx_config
 
 #=================================================
 # CONFIGURE SYSTEMD SERVICE
@@ -73,7 +74,7 @@ ynh_script_progression "Configuring systemd service..."
 ynh_config_add_systemd
 
 yunohost service add "$app" \
-    --description="Docker container: $container_name ($image)" \
+    --description="Docker container: $image" \
     --log="journalctl -u $app -o cat"
 
 #=================================================

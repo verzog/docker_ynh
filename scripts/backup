@@ -25,9 +25,10 @@ if [ "$use_data_volume" -eq 1 ]; then
 fi
 
 #=================================================
-# BACKUP SYSTEMD SERVICE CONFIGURATION
+# BACKUP SYSTEM CONFIGURATION
 #=================================================
 
+ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf"
 ynh_backup "/etc/systemd/system/$app.service"
 
 #=================================================

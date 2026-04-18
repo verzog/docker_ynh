@@ -1,9 +1,5 @@
 #!/bin/bash
 
-## this script is only run if actual change to domain/path is detected
-## new location is available via $domain and $path (or $new_domain and $new_path)
-## old values are available via $old_domain and $old_path
-
 source _common.sh
 source /usr/share/yunohost/helpers
 
@@ -15,29 +11,11 @@ ynh_script_progression "Stopping $app's systemd service..."
 ynh_systemctl --service="$app" --action="stop"
 
 #=================================================
-# CHECK IF DOCKER OPTIONS NEED UPDATING
+# MODIFY URL IN NGINX CONF
 #=================================================
-ynh_script_progression "Checking Docker configuration..."
+ynh_script_progression "Updating NGINX web server configuration..."
 
-docker_options=$(ynh_app_setting_get --key=docker_options)
-
-if [ -n "$docker_options" ]; then
-    if echo "$docker_options" | grep -qE "($old_domain|$old_path)"; then
-        ynh_print_warn "Your Docker options contain references to the old URL."
-        ynh_print_warn "Current Docker options: $docker_options"
-        ynh_print_warn "You may need to update docker_options manually:"
-        ynh_print_warn "  yunohost app setting $app --key=docker_options --value=\"<new_options>\""
-    fi
-fi
-
-#=================================================
-# UPDATE SYSTEMD SERVICE CONFIGURATION
-#=================================================
-ynh_script_progression "Regenerating systemd service configuration..."
-
-ynh_config_add_systemd
-
-systemctl daemon-reload
+ynh_config_change_url_nginx
 
 #=================================================
 # START SYSTEMD SERVICE
@@ -45,13 +23,6 @@ systemctl daemon-reload
 ynh_script_progression "Starting $app's systemd service..."
 
 ynh_systemctl --service="$app" --action="start"
-
-sleep 2
-
-if ! ynh_systemctl --service="$app" --action="is-active" &>/dev/null; then
-    ynh_print_warn "Container may have exited immediately. Check logs:"
-    ynh_print_warn "  journalctl -u $app -n 50"
-fi
 
 #=================================================
 # END OF SCRIPT

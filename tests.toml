@@ -4,12 +4,8 @@ test_format = 1.0
 
 [default]
 
-    # Docker containers don't have a web URL, disable URL-based tests
-    exclude = ["install.root", "install.subdir", "change_url"]
-
-    # Provide a known-good lightweight image for CI tests
-    args.image = "hello-world"
-    args.container_name = "test-container"
+    args.image = "nginx:alpine"
+    args.container_port = 80
     args.restart_policy = "no"
     args.use_data_volume = false
     args.docker_options = ""

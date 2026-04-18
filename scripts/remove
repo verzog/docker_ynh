@@ -4,7 +4,7 @@ source _common.sh
 source /usr/share/yunohost/helpers
 
 #=================================================
-# REMOVE YUNOHOST SERVICE INTEGRATION
+# REMOVE SERVICE AND CONTAINER
 #=================================================
 ynh_script_progression "Removing system integrations..."
 
@@ -12,17 +12,19 @@ yunohost service remove "$app" 2>/dev/null || true
 
 ynh_config_remove_systemd
 
-#=================================================
-# STOP AND REMOVE DOCKER CONTAINER
-#=================================================
-ynh_script_progression "Stopping and removing Docker container..."
-
 if docker ps --filter "name=^${app}$" --format "{{.ID}}" 2>/dev/null | grep -q .; then
     docker stop "$app" 2>/dev/null || true
     sleep 1
 fi
 
 docker rm "$app" 2>/dev/null || true
+
+#=================================================
+# REMOVE NGINX CONFIGURATION
+#=================================================
+ynh_script_progression "Removing NGINX configuration..."
+
+ynh_remove_nginx_config
 
 #=================================================
 # END OF SCRIPT
