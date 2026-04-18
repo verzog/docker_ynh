@@ -15,17 +15,37 @@ It shall NOT be edited by hand.
 
 ## Overview
 
-Deploy and manage a Docker container on your YunoHost server
+Deploy and manage a **single** Docker container on your YunoHost server, accessed via a YunoHost domain with NGINX reverse proxy.
 
 **Shipped version:** 1.0~ynh1
+
+## ⚠️ This app is for single self-contained containers only
+
+This app works by running one Docker container and reverse-proxying it through YunoHost's NGINX. It is designed for apps that ship as a **single image with no external dependencies** — typically because they bundle their own database, or don't need one at all.
+
+**Good fits — single-container apps:**
+
+| Image | What it is |
+|---|---|
+| `vaultwarden/server` | Password manager |
+| `gitea/gitea` | Git hosting |
+| `ghost` | Blogging platform |
+| `freshrss/freshrss` | RSS reader |
+| `uptime-kuma/uptime-kuma` | Uptime monitoring |
+| `joplin/server` | Notes sync server |
+| `nginx:alpine` | Static file server |
+
+**Not suitable — multi-container apps:**
+
+Apps like **Moodle**, **Gibbon EDU**, **WordPress** (with MySQL), and **Nextcloud** (full) require multiple coordinated containers (web + database + cache). This app cannot orchestrate them. For those, a dedicated `_ynh` package is the correct approach — it gives you proper LDAP/SSO integration, automatic database management, and clean backup/restore.
 
 ## Disclaimers / important information
 
 - Docker must be installed on your server before installing this app (`sudo apt install docker.io`)
-- This app does **not** integrate with YunoHost's SSO/LDAP — containers are independent services
+- This app does **not** integrate with YunoHost's SSO/LDAP — the container runs as an independent service
 - This app will **not** work if YunoHost itself is running inside a Docker container
-- Only data stored in the mounted `/data` volume is included in YunoHost backups
-- Running the upgrade action will re-pull the image and recreate the container
+- Only data stored in the mounted `/data` volume is included in YunoHost backups — data inside the container elsewhere is lost on upgrade
+- Running the upgrade action re-pulls the image and recreates the container
 
 ## Documentation and resources
 
