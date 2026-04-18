@@ -25,10 +25,12 @@ ExecStart=/usr/bin/docker run \
     __DOCKER_OPTIONS__ \
     __IMAGE__
 
-ExecStop=/usr/bin/docker stop __APP__
+ExecStop=-/usr/bin/docker stop __APP__
 
 Restart=__SYSTEMD_RESTART__
 RestartSec=10
+StartLimitIntervalSec=120
+StartLimitBurst=5
 
 ### Security hardening
 ### Note: PrivateDevices, RestrictNamespaces, NoNewPrivileges, SystemCallFilter are
