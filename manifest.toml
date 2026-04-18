@@ -49,6 +49,8 @@ ram.runtime = "200M"
     ask.en = "Which port does the container expose internally? (e.g. 80 for nginx, 8080 for many Java apps)"
     ask.fr = "Sur quel port le conteneur écoute-t-il en interne ? (ex: 80 pour nginx, 8080 pour les apps Java)"
     type = "number"
+    min = 1
+    max = 65535
     default = 80
 
     [install.restart_policy]
