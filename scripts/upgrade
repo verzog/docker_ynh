@@ -67,8 +67,11 @@ ynh_script_progression "Starting $app's systemd service..."
 
 ynh_systemctl --service="$app" --action="start"
 
-if ! wait_for_port "$port" 30; then
-    ynh_print_warn "Container did not bind to port $port within 30 seconds. Check logs with:"
+if ! wait_for_port "$port" 60; then
+    ynh_print_warn "Container did not bind to port $port within 60 seconds."
+    ynh_print_warn "Some images (especially docker-compose) take longer to start."
+    ynh_print_warn "Container may still be initializing. Check status with:"
+    ynh_print_warn "  systemctl status $app"
     ynh_print_warn "  journalctl -u $app -n 50"
 fi
 
