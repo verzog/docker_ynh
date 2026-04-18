@@ -67,7 +67,10 @@ ynh_script_progression "Starting $app's systemd service..."
 
 ynh_systemctl --service="$app" --action="start"
 
-sleep 2
+if ! wait_for_port "$port" 30; then
+    ynh_print_warn "Container did not bind to port $port within 30 seconds. Check logs with:"
+    ynh_print_warn "  journalctl -u $app -n 50"
+fi
 
 #=================================================
 # END OF SCRIPT

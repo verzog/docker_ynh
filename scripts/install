@@ -84,9 +84,8 @@ ynh_script_progression "Starting Docker container..."
 
 ynh_systemctl --service="$app" --action="start"
 
-sleep 2
-if ! ynh_systemctl --service="$app" --action="is-active" &>/dev/null; then
-    ynh_print_warn "Container started but exited immediately. Check logs with:"
+if ! wait_for_port "$port" 30; then
+    ynh_print_warn "Container did not bind to port $port within 30 seconds. Check logs with:"
     ynh_print_warn "  journalctl -u $app -n 50"
 fi
 

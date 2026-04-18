@@ -31,3 +31,19 @@ compute_docker_config() {
 
     export systemd_restart docker_volume_opts
 }
+
+# Wait up to $timeout seconds for a TCP port on localhost to accept connections.
+# Returns 0 when the port is ready, 1 on timeout.
+wait_for_port() {
+    local port="$1"
+    local timeout="${2:-30}"
+    local elapsed=0
+    while ! (echo > /dev/tcp/127.0.0.1/"$port") 2>/dev/null; do
+        if [ "$elapsed" -ge "$timeout" ]; then
+            return 1
+        fi
+        sleep 1
+        elapsed=$((elapsed + 1))
+    done
+    return 0
+}
