@@ -20,7 +20,7 @@ if ! command -v docker &>/dev/null; then
 fi
 
 #=================================================
-# PULL DOCKER IMAGE WITH RETRY LOGIC
+# PULL DOCKER IMAGE
 #=================================================
 ynh_script_progression "Pulling Docker image $image..."
 
@@ -51,25 +51,31 @@ if [ -d "$YNH_APP_BACKUP_DIR$data_dir" ]; then
 fi
 
 #=================================================
-# RESTORE SYSTEMD SERVICE CONFIGURATION
+# RESTORE SYSTEM CONFIGURATION
 #=================================================
-ynh_script_progression "Restoring systemd service configuration..."
+ynh_script_progression "Restoring system configurations..."
 
-ynh_restore_file --origin_path="/etc/systemd/system/$app.service" --dest_path="/etc/systemd/system/$app.service"
+ynh_restore_file --origin_path="/etc/nginx/conf.d/$domain.d/$app.conf"
+ynh_restore_file --origin_path="/etc/systemd/system/$app.service"
 
 systemctl daemon-reload
 systemctl enable "$app.service" --quiet
+
+#=================================================
+# RELOAD NGINX
+#=================================================
+
+ynh_systemctl --service="nginx" --action="reload"
 
 #=================================================
 # REGISTER SERVICE WITH YUNOHOST
 #=================================================
 ynh_script_progression "Registering service with YunoHost..."
 
-container_name=$(ynh_app_setting_get --key=container_name)
 image=$(ynh_app_setting_get --key=image)
 
 yunohost service add "$app" \
-    --description="Docker container: $container_name ($image)" \
+    --description="Docker container: $image" \
     --log="journalctl -u $app -o cat"
 
 #=================================================

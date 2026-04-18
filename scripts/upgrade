@@ -11,7 +11,7 @@ ynh_script_progression "Stopping $app's systemd service..."
 ynh_systemctl --service="$app" --action="stop"
 
 #=================================================
-# PULL LATEST IMAGE WITH RETRY LOGIC
+# PULL LATEST IMAGE
 #=================================================
 ynh_script_progression "Pulling latest Docker image $image..."
 
@@ -35,12 +35,13 @@ fi
 docker rm "$app" 2>/dev/null || true
 
 #=================================================
-# RETRIEVE AND RECOMPUTE RUN CONFIGURATION
+# RECOMPUTE CONFIGURATION
 #=================================================
 ynh_script_progression "Reapplying container configuration..."
 
 restart_policy=$(ynh_app_setting_get --key=restart_policy)
 use_data_volume=$(ynh_app_setting_get --key=use_data_volume)
+container_port=$(ynh_app_setting_get --key=container_port)
 
 compute_docker_config "$restart_policy" "$use_data_volume" "$data_dir"
 
@@ -48,14 +49,15 @@ ynh_app_setting_set --key=systemd_restart --value="$systemd_restart"
 ynh_app_setting_set --key=docker_volume_opts --value="$docker_volume_opts"
 
 #=================================================
-# REAPPLY SYSTEMD CONFIGURATION
+# UPDATE NGINX AND SYSTEMD CONFIGS
 #=================================================
 ynh_script_progression "Upgrading system configurations..."
 
+ynh_add_nginx_config
 ynh_config_add_systemd
 
 yunohost service add "$app" \
-    --description="Docker container: $container_name ($image)" \
+    --description="Docker container: $image" \
     --log="journalctl -u $app -o cat"
 
 #=================================================

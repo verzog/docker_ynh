@@ -1,5 +1,5 @@
 [Unit]
-Description=Docker container: __CONTAINER_NAME__ (__IMAGE__) - YunoHost app __APP__
+Description=Docker container: __IMAGE__ - YunoHost app __APP__
 Requires=docker.service
 After=docker.service
 
@@ -11,7 +11,8 @@ Group=__APP__
 # Remove any leftover container from a previous run before starting
 ExecStartPre=-/usr/bin/docker rm -f __APP__
 
-# Run the container in the foreground so systemd tracks it
+# Run the container in the foreground so systemd tracks it.
+# Port mapping is automatic: host port __PORT__ -> container port __CONTAINER_PORT__
 ExecStart=/usr/bin/docker run \
     --rm \
     --name=__APP__ \
@@ -19,6 +20,7 @@ ExecStart=/usr/bin/docker run \
     --log-opt tag=__APP__ \
     -e TZ=UTC \
     --volume /etc/timezone:/etc/timezone:ro \
+    -p 127.0.0.1:__PORT__:__CONTAINER_PORT__ \
     __DOCKER_VOLUME_OPTS__ \
     __DOCKER_OPTIONS__ \
     __IMAGE__
@@ -29,13 +31,9 @@ Restart=__SYSTEMD_RESTART__
 RestartSec=10
 
 ### Security hardening
-### Note: many standard systemd hardening options (PrivateDevices, RestrictNamespaces,
-### NoNewPrivileges, SystemCallFilter) are intentionally omitted here because they are
-### incompatible with running Docker containers, which require namespace access and
-### elevated capabilities. The service is run as a dedicated system user in the
-### docker group rather than root, which is the primary privilege reduction for this app.
-
-# Basic protections that are safe with Docker
+### Note: PrivateDevices, RestrictNamespaces, NoNewPrivileges, SystemCallFilter are
+### intentionally omitted — they are incompatible with running Docker containers.
+### Running as a dedicated system user in the docker group is the primary mitigation.
 PrivateTmp=yes
 ProtectClock=yes
 ProtectHostname=yes

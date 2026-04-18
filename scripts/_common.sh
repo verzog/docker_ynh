@@ -5,7 +5,7 @@
 #=================================================
 
 # Compute Docker run configuration based on install settings.
-# This centralizes restart/volume logic to avoid duplication between install/upgrade.
+# Sets $systemd_restart and $docker_volume_opts for use in systemd template.
 compute_docker_config() {
     local restart_policy="$1"
     local use_data_volume="$2"
