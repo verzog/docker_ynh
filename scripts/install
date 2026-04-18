@@ -64,7 +64,7 @@ ynh_app_setting_set --key=use_data_volume --value="$use_data_volume"
 #=================================================
 ynh_script_progression "Configuring NGINX web server..."
 
-ynh_add_nginx_config
+ynh_config_add_nginx
 
 #=================================================
 # CONFIGURE SYSTEMD SERVICE

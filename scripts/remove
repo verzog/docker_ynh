@@ -24,7 +24,7 @@ docker rm "$app" 2>/dev/null || true
 #=================================================
 ynh_script_progression "Removing NGINX configuration..."
 
-ynh_remove_nginx_config
+ynh_config_remove_nginx
 
 #=================================================
 # END OF SCRIPT
