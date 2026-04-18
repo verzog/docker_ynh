@@ -5,21 +5,24 @@
 #=================================================
 
 # Compute Docker run configuration based on install settings.
-# Sets $systemd_restart and $docker_volume_opts for use in systemd template.
+# Sets $docker_restart_policy and $docker_volume_opts for use in systemd template.
 compute_docker_config() {
     local restart_policy="$1"
     local use_data_volume="$2"
     local data_dir="$3"
 
     case "$restart_policy" in
-        "always"|"unless-stopped")
-            systemd_restart="always"
+        "always")
+            docker_restart_policy="always"
+            ;;
+        "unless-stopped")
+            docker_restart_policy="unless-stopped"
             ;;
         "on-failure")
-            systemd_restart="on-failure"
+            docker_restart_policy="on-failure:5"
             ;;
         *)
-            systemd_restart="no"
+            docker_restart_policy="no"
             ;;
     esac
 
@@ -29,7 +32,7 @@ compute_docker_config() {
         docker_volume_opts=""
     fi
 
-    export systemd_restart docker_volume_opts
+    export docker_restart_policy docker_volume_opts
 }
 
 # Wait up to $timeout seconds for a TCP port on localhost to accept connections.
