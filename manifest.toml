@@ -76,8 +76,8 @@ ram.runtime = "200M"
     default = false
 
     [install.docker_options]
-    ask.en = "Additional Docker options (env vars, extra volumes, etc.). Do not add port mappings here."
-    ask.fr = "Options Docker supplémentaires (variables d'environnement, volumes, etc.). Ne pas ajouter de ports ici."
+    ask.en = "Additional Docker options (environment variables, volumes, etc.). Do not add port mappings here. Examples:\n  -e VAR=value (set environment variable)\n  -e DB_HOST=localhost -e DB_USER=admin (Moodle, etc.)\n  -v /host/path:/container/path (mount additional volumes)\nSee DOCKER_IMAGES.md for setup instructions for specific images."
+    ask.fr = "Options Docker supplémentaires (variables d'environnement, volumes, etc.). Ne pas ajouter de ports ici. Exemples:\n  -e VAR=value (définir une variable d'environnement)\n  -e DB_HOST=localhost -e DB_USER=admin (Moodle, etc.)\n  -v /host/path:/container/path (monter des volumes supplémentaires)\nVoir DOCKER_IMAGES.md pour les instructions de configuration pour des images spécifiques."
     type = "string"
     example = "-e MY_VAR=value -e ANOTHER_VAR=other"
     optional = true
