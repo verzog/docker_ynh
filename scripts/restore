@@ -75,8 +75,7 @@ ynh_script_progression "Registering service with YunoHost..."
 image=$(ynh_app_setting_get --key=image)
 
 yunohost service add "$app" \
-    --description="Docker container: $image" \
-    --log="journalctl -u $app -o cat"
+    --description="Docker container: $image"
 
 #=================================================
 # START SERVICE

@@ -10,6 +10,7 @@ compute_docker_config() {
     local restart_policy="$1"
     local use_data_volume="$2"
     local data_dir="$3"
+    local mount_docker_socket="${4:-0}"
 
     case "$restart_policy" in
         "always")
@@ -26,10 +27,12 @@ compute_docker_config() {
             ;;
     esac
 
+    docker_volume_opts=""
     if [ "$use_data_volume" -eq 1 ]; then
         docker_volume_opts="-v $data_dir:/data"
-    else
-        docker_volume_opts=""
+    fi
+    if [ "$mount_docker_socket" -eq 1 ]; then
+        docker_volume_opts="$docker_volume_opts -v /var/run/docker.sock:/var/run/docker.sock"
     fi
 
     export docker_restart_policy docker_volume_opts
