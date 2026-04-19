@@ -69,6 +69,12 @@ ram.runtime = "200M"
     type = "boolean"
     default = true
 
+    [install.mount_docker_socket]
+    ask.en = "Mount the Docker socket into the container? Required for tools like Portainer that manage Docker. Warning: grants the container root-equivalent access to the host."
+    ask.fr = "Monter le socket Docker dans le conteneur ? Requis pour les outils comme Portainer qui gèrent Docker. Attention : donne au conteneur un accès équivalent à root sur l'hôte."
+    type = "boolean"
+    default = false
+
     [install.docker_options]
     ask.en = "Additional Docker options (env vars, extra volumes, etc.). Do not add port mappings here."
     ask.fr = "Options Docker supplémentaires (variables d'environnement, volumes, etc.). Ne pas ajouter de ports ici."
