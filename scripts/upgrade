@@ -43,11 +43,13 @@ restart_policy=$(ynh_app_setting_get --key=restart_policy)
 use_data_volume=$(ynh_app_setting_get --key=use_data_volume)
 container_port=$(ynh_app_setting_get --key=container_port)
 mount_docker_socket=$(ynh_app_setting_get --key=mount_docker_socket)
+docker_network=$(ynh_app_setting_get --key=docker_network)
 
-compute_docker_config "$restart_policy" "$use_data_volume" "$data_dir" "$mount_docker_socket"
+compute_docker_config "$restart_policy" "$use_data_volume" "$data_dir" "$mount_docker_socket" "$docker_network"
 
 ynh_app_setting_set --key=docker_restart_policy --value="$docker_restart_policy"
 ynh_app_setting_set --key=docker_volume_opts --value="$docker_volume_opts"
+ynh_app_setting_set --key=docker_network_opt --value="$docker_network_opt"
 
 #=================================================
 # UPDATE NGINX AND SYSTEMD CONFIGS
