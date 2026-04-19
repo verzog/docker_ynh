@@ -85,6 +85,20 @@ if ! wait_for_port "$port" 60; then
 fi
 
 #=================================================
+# VERIFY DOCKER NETWORK ATTACHMENT
+#=================================================
+if [ -n "$docker_network" ]; then
+    ynh_script_progression "Verifying Docker network attachment..."
+    container_id=$(docker inspect -f '{{.Id}}' "$app" 2>/dev/null | head -c 12)
+    if [ -n "$container_id" ]; then
+        if ! docker network inspect "$docker_network" | grep -q "$container_id"; then
+            ynh_print_warn "Container not on network '$docker_network'. Connecting..."
+            docker network connect "$docker_network" "$app" 2>/dev/null || true
+        fi
+    fi
+fi
+
+#=================================================
 # END OF SCRIPT
 #=================================================
 ynh_script_progression "Upgrade of $app completed"
