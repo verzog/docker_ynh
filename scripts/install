@@ -4,14 +4,6 @@ source _common.sh
 source /usr/share/yunohost/helpers
 
 #=================================================
-# CREATE DOCKER NETWORK IF SPECIFIED
-#=================================================
-if [ -n "$docker_network" ]; then
-    ynh_script_progression "Creating Docker network '$docker_network'..."
-    docker network create "$docker_network" 2>/dev/null || true
-fi
-
-#=================================================
 # GRANT APP USER ACCESS TO DOCKER
 #=================================================
 ynh_script_progression "Configuring system user..."
@@ -88,6 +80,14 @@ yunohost service add "$app" \
     --description="Docker container: $image"
 
 #=================================================
+# ENSURE DOCKER NETWORK EXISTS
+#=================================================
+if [ -n "$docker_network" ]; then
+    ynh_script_progression "Ensuring Docker network '$docker_network' exists..."
+    docker network create "$docker_network" 2>/dev/null || ynh_print_info "Network '$docker_network' already exists"
+fi
+
+#=================================================
 # START SERVICE
 #=================================================
 ynh_script_progression "Starting Docker container..."
@@ -100,6 +100,20 @@ if ! wait_for_port "$port" 60; then
     ynh_print_warn "Container may still be initializing. Check status with:"
     ynh_print_warn "  systemctl status $app"
     ynh_print_warn "  journalctl -u $app -n 50"
+fi
+
+#=================================================
+# VERIFY DOCKER NETWORK ATTACHMENT
+#=================================================
+if [ -n "$docker_network" ]; then
+    ynh_script_progression "Verifying Docker network attachment..."
+    container_id=$(docker inspect -f '{{.Id}}' "$app" 2>/dev/null | head -c 12)
+    if [ -n "$container_id" ]; then
+        if ! docker network inspect "$docker_network" | grep -q "$container_id"; then
+            ynh_print_warn "Container not on network '$docker_network'. Connecting..."
+            docker network connect "$docker_network" "$app" 2>/dev/null || true
+        fi
+    fi
 fi
 
 #=================================================
