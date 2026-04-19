@@ -14,7 +14,9 @@ When you install this package, you provide:
    - `on-failure` — Restart only if exit code is non-zero
    - `no` — Never auto-restart (manual management)
 4. **Data volume**: Whether to mount persistent storage at `/data` (recommended for databases)
-5. **Custom Docker options**: Extra flags for `docker run` (e.g., `-p 8080:80`, `-e VAR=value`)
+5. **Mount Docker socket**: Whether to bind-mount `/var/run/docker.sock` into the container. Required for tools like Portainer that manage Docker. **Warning**: this grants the container root-equivalent access to the host — only enable for trusted images.
+6. **Docker network** (optional): A user-defined Docker network to attach the container to. Containers on the same network can resolve each other by name. Leave empty to use the default isolated bridge. The network is created automatically if it doesn't exist.
+7. **Custom Docker options**: Extra flags for `docker run` (e.g., `-e VAR=value`). Do **not** add port mappings here — host port mapping is handled by the app.
 
 ## Managing Your Container
 

@@ -20,7 +20,7 @@ sleep 2
 
 use_data_volume=$(ynh_app_setting_get --key=use_data_volume)
 
-if [ "$use_data_volume" -eq 1 ]; then
+if [ "${use_data_volume:-0}" = "1" ]; then
     ynh_backup "$data_dir"
 fi
 
