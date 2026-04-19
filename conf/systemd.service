@@ -13,8 +13,8 @@ ExecStartPre=-/usr/bin/docker rm -f __APP__
 
 # Run the container in the foreground so systemd tracks it.
 # Port mapping is automatic: host port __PORT__ -> container port __CONTAINER_PORT__
+# Note: --rm is incompatible with --restart, so we manage cleanup in ExecStop instead
 ExecStart=/usr/bin/docker run \
-    --rm \
     --restart=__DOCKER_RESTART_POLICY__ \
     --name=__APP__ \
     --log-driver=journald \
@@ -27,6 +27,7 @@ ExecStart=/usr/bin/docker run \
     __IMAGE__
 
 ExecStop=-/usr/bin/docker stop __APP__
+ExecStopPost=-/usr/bin/docker rm -f __APP__
 
 Restart=no
 RestartSec=10
