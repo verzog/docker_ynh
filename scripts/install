@@ -4,6 +4,14 @@ source _common.sh
 source /usr/share/yunohost/helpers
 
 #=================================================
+# CREATE DOCKER NETWORK IF SPECIFIED
+#=================================================
+if [ -n "$docker_network" ]; then
+    ynh_script_progression "Creating Docker network '$docker_network'..."
+    docker network create "$docker_network" 2>/dev/null || true
+fi
+
+#=================================================
 # GRANT APP USER ACCESS TO DOCKER
 #=================================================
 ynh_script_progression "Configuring system user..."

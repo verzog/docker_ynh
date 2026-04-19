@@ -4,8 +4,15 @@ source _common.sh
 source /usr/share/yunohost/helpers
 
 #=================================================
-# STOP SERVICE
+# CREATE DOCKER NETWORK IF SPECIFIED
 #=================================================
+if [ -n "$docker_network" ]; then
+    ynh_script_progression "Ensuring Docker network '$docker_network' exists..."
+    docker network create "$docker_network" 2>/dev/null || true
+fi
+
+#=================================================
+# STOP SERVICE
 ynh_script_progression "Stopping $app's systemd service..."
 
 ynh_systemctl --service="$app" --action="stop"
