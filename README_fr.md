@@ -15,15 +15,15 @@ Il ne doit pas être édité à la main.
 
 ## Vue d'ensemble
 
-Déployez et gérez un conteneur Docker **unique** sur votre serveur YunoHost, accessible via un domaine YunoHost avec proxy inverse NGINX.
+Déployez et gérez des conteneurs Docker sur votre serveur YunoHost, chacun accessible via un domaine YunoHost avec proxy inverse NGINX. Les apps à conteneur unique fonctionnent directement ; les configurations multi-conteneurs (ex. web + base de données) sont prises en charge en installant chaque conteneur comme instance distincte et en les reliant via un réseau Docker partagé.
 
 **Version incluse :** 1.0~ynh1
 
-## ⚠️ Cette app est uniquement pour les conteneurs autonomes
+## Ce que cette app prend en charge
 
-Cette app fonctionne en exécutant un seul conteneur Docker et en le proxifiant via NGINX. Elle est conçue pour les apps qui se déploient en **une seule image sans dépendances externes** — parce qu'elles embarquent leur propre base de données, ou n'en ont pas besoin.
+### Apps à conteneur unique
 
-**Cas d'usage appropriés — conteneurs autonomes :**
+Une seule installation, pointez sur l'image, c'est prêt. Cas typiques :
 
 | Image | Description |
 |---|---|
@@ -35,14 +35,22 @@ Cette app fonctionne en exécutant un seul conteneur Docker et en le proxifiant 
 | `joplin/server` | Synchronisation de notes |
 | `nginx:alpine` | Serveur de fichiers statiques |
 
-**Non adapté — apps multi-conteneurs :**
+### Apps multi-conteneurs
 
-Des apps comme **Moodle**, **Gibbon EDU**, **WordPress** (avec MySQL) et **Nextcloud** (complet) nécessitent plusieurs conteneurs coordonnés (web + base de données + cache). Cette app ne peut pas les orchestrer. Pour celles-ci, un paquet `_ynh` dédié est la bonne approche — il offre l'intégration LDAP/SSO, la gestion automatique de la base de données et une sauvegarde/restauration propre.
+Plusieurs conteneurs peuvent communiquer via un **réseau Docker défini par l'utilisateur**. Installez chaque conteneur comme instance distincte, donnez-leur le même nom de réseau dans le formulaire d'installation, et ils se référencent par nom de conteneur. Voir [`DOCKER_IMAGES.md`](./DOCKER_IMAGES.md) pour des recettes concrètes. Exemples :
+
+| App | Recette |
+|---|---|
+| **Moodle** + MariaDB | Instance MariaDB + instance Moodle sur un réseau partagé |
+| **Nextcloud** + MariaDB | Même principe, `MYSQL_HOST=<nom-instance-mariadb>` |
+| **WordPress** + MariaDB | Même principe avec `WORDPRESS_DB_HOST` |
+
+Pour les apps nécessitant une intégration YunoHost plus poussée (LDAP/SSO, provisionnement automatique de BDD, hooks de sauvegarde natifs), un paquet `_ynh` dédié reste recommandé — cette app échange cette intégration contre la flexibilité et la rapidité de mise en place.
 
 ## Avertissements / informations importantes
 
 - Docker doit être installé sur le serveur avant d'installer cette app (`sudo apt install docker.io`)
-- Cette app ne s'intègre **pas** avec le SSO/LDAP de YunoHost — le conteneur fonctionne comme un service indépendant
+- Cette app ne s'intègre **pas** avec le SSO/LDAP de YunoHost — chaque conteneur fonctionne comme un service indépendant
 - Cette app ne fonctionnera **pas** si YunoHost lui-même s'exécute dans un conteneur Docker
 - Seules les données dans le volume `/data` monté sont sauvegardées — les données ailleurs dans le conteneur sont perdues lors d'une mise à jour
 - L'action de mise à jour re-télécharge l'image et recrée le conteneur
