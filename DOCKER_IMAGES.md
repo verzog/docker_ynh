@@ -70,12 +70,29 @@ Use the container name from "Instance Name" in your docker_options for the app c
 
 ## Portainer (Docker Management)
 
-**Image**: `portainer/portainer-ce:latest`  
+**Image**: `portainer/portainer-ce:lts`  
 **Container Port**: `9000`  
 **Mount Docker Socket**: `true` (required)  
 **Docker Options**: *(leave empty)*
 
 Portainer needs access to the Docker daemon to manage containers. Enable "Mount Docker socket" during installation.
+
+### Google Safe Browsing false-positives
+
+Publicly reachable Portainer instances are occasionally flagged by Google Safe Browsing ("deceptive site ahead"). The login page is a generic credential form with minimal branding, which its phishing classifier trips on once the URL is crawled.
+
+If your instance gets flagged:
+
+1. **Request a review** in [Google Search Console](https://search.google.com/search-console) → *Security Issues* → *Request Review*. This is the only action that actually clears the warning (24–72h).
+2. **Stop exposing the URL publicly.** Don't paste it into READMEs, public issues, forums, or screenshots — crawlers feed the classifier.
+3. **Restrict the YunoHost permission** so the app isn't reachable anonymously:
+   ```bash
+   yunohost user permission update docker_container.main --remove visitors
+   ```
+   This puts the Portainer UI behind YunoHost SSO. Crawlers hit the SSO login instead of Portainer's, which sidesteps the heuristic.
+4. **Use the `:lts` tag** (shown above) rather than `:latest`, so you're not on a bleeding-edge build whose JS assets may already be flagged.
+
+The nginx template for this app sets `X-Robots-Tag: noindex, nofollow` and serves a restrictive `robots.txt` at `__PATH__/robots.txt` to discourage future crawling. That doesn't remove an existing warning — only the Search Console review does.
 
 ---
 
