@@ -4,6 +4,16 @@ source _common.sh
 source /usr/share/yunohost/helpers
 
 #=================================================
+# ENSURE DOWNWARD COMPATIBILITY
+#=================================================
+ynh_script_progression "Ensuring downward compatibility..."
+
+# Backfill settings introduced in later versions so older installs can upgrade cleanly.
+ynh_app_setting_set_default --key=mount_docker_socket --value="0"
+ynh_app_setting_set_default --key=docker_network --value=""
+ynh_app_setting_set_default --key=docker_options --value=""
+
+#=================================================
 # CREATE DOCKER NETWORK IF SPECIFIED
 #=================================================
 if [ -n "$docker_network" ]; then
@@ -13,6 +23,7 @@ fi
 
 #=================================================
 # STOP SERVICE
+#=================================================
 ynh_script_progression "Stopping $app's systemd service..."
 
 ynh_systemctl --service="$app" --action="stop"
