@@ -4,6 +4,13 @@ source _common.sh
 source /usr/share/yunohost/helpers
 
 #=================================================
+# VALIDATE INPUTS
+#=================================================
+if [ "$container_port" -lt 1 ] || [ "$container_port" -gt 65535 ]; then
+    ynh_die "Invalid container_port '$container_port': must be between 1 and 65535."
+fi
+
+#=================================================
 # GRANT APP USER ACCESS TO DOCKER
 #=================================================
 ynh_script_progression "Configuring system user..."
