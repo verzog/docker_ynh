@@ -190,6 +190,45 @@ docker image prune -a
 docker container prune
 ```
 
+### Reverse-Proxy Aware Apps Returning HTTP 500
+
+Some web apps (notably **Moodle**) refuse to serve traffic when their reverse-proxy setting is enabled *and* the `Host` header from nginx matches their public URL.
+
+YunoHost's default nginx template forwards the external `Host` header (`scstaging.example.com` → container), which is the normal behavior most apps expect. Moodle's `$CFG->reverseproxy = true` mode, however, expects the `Host` header to be an *internal* name that differs from `$CFG->wwwroot`. When they match, Moodle throws `reverseproxyabused`:
+
+> Reverse proxy enabled so the server cannot be accessed directly.
+
+The check is in `lib/setuplib.php`:
+
+```php
+if (!empty($CFG->reverseproxy) && $rurl['host'] === $wwwroot['host'] && ...) {
+    throw new \moodle_exception('reverseproxyabused', 'error');
+}
+```
+
+**Fix** (Moodle): disable `reverseproxy` but keep `sslproxy` so HTTPS is still honored:
+
+```bash
+docker exec <app> sed -i 's|^$CFG->reverseproxy = true;|// $CFG->reverseproxy = true;|' /bitnami/moodle/config.php
+# Leave $CFG->sslproxy = true; as-is.
+```
+
+Other apps with similar reverse-proxy detection (e.g., Nextcloud's `trusted_proxies`, GitLab's `external_url`) may need analogous tweaks. Check each image's documentation if the site returns 500/403 only when hit via the YunoHost domain but works when curl'd directly at `127.0.0.1:<port>`.
+
+### nginx Returning the Default Welcome Page After Reloads
+
+If requests to the app suddenly return the Debian "Welcome to nginx" page (615 bytes) and reloads don't fix it, check for a stale nginx master from an incomplete binary upgrade:
+
+```bash
+sudo ps -eo pid,ppid,cmd | grep 'nginx: master'
+```
+
+Two master processes (one parent-of-the-other) indicate a stuck USR2 handoff. A full restart clears it:
+
+```bash
+sudo systemctl restart nginx
+```
+
 ### Network Issues Inside Container
 If the container can't reach external networks:
 
