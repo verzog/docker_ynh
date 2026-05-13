@@ -144,6 +144,71 @@ If you can't use networks, connect via host IP:
 
 ---
 
+## Moodle — Bitnami variant (`bitnamilegacy/moodle`)
+
+**Image**: `bitnamilegacy/moodle:latest` (or `bitnami/moodle:latest`)
+**Container Port**: `8080` (Bitnami serves on 8080, not 80)
+**Mount Docker Socket**: `false`
+**Data Volume**: `true` (required for persistence)
+
+**Important**: The Bitnami image uses **different env var names** than `lthub/moodle`. It uses `MOODLE_DATABASE_*` (not `MOODLE_DB_*`) and will refuse to start without a database password.
+
+Symptom of missing config (from `journalctl -u docker_container__N`):
+```
+ERROR ==> The MOODLE_DATABASE_PASSWORD environment variable is empty or not set.
+Set the environment variable ALLOW_EMPTY_PASSWORD=yes to allow a blank password.
+```
+
+### Recommended setup (MariaDB + Bitnami Moodle on same network)
+
+**Step 1: Install MariaDB**
+- Image: `mariadb:latest`
+- Container Port: `3306`
+- **Docker Network**: `moodle-network`
+- Docker Options:
+  ```
+  -e MARIADB_ROOT_PASSWORD=rootpass \
+  -e MARIADB_USER=bn_moodle \
+  -e MARIADB_PASSWORD=moodlepass \
+  -e MARIADB_DATABASE=bitnami_moodle
+  ```
+
+**Step 2: Install Bitnami Moodle**
+- Image: `bitnamilegacy/moodle:latest`
+- Container Port: `8080`
+- **Docker Network**: `moodle-network`
+- Docker Options (replace `docker_container__1` with the actual MariaDB instance name):
+  ```
+  -e MOODLE_DATABASE_HOST=docker_container__1 \
+  -e MOODLE_DATABASE_PORT_NUMBER=3306 \
+  -e MOODLE_DATABASE_NAME=bitnami_moodle \
+  -e MOODLE_DATABASE_USER=bn_moodle \
+  -e MOODLE_DATABASE_PASSWORD=moodlepass \
+  -e MOODLE_USERNAME=admin \
+  -e MOODLE_PASSWORD=adminpassword \
+  -e MOODLE_EMAIL=admin@example.com
+  ```
+
+The `MARIADB_USER`/`MARIADB_PASSWORD`/`MARIADB_DATABASE` values on the MariaDB side must match the `MOODLE_DATABASE_USER`/`MOODLE_DATABASE_PASSWORD`/`MOODLE_DATABASE_NAME` values on the Moodle side.
+
+### Smoke-testing the packaging only
+
+To verify env vars are being passed through without setting up a database, install with:
+```
+-e ALLOW_EMPTY_PASSWORD=yes
+```
+The container will still fail later (no DB to connect to), but it will get past the password check — useful when isolating a config problem from a packaging problem.
+
+### Note on the "No such container" log line
+
+On first start you'll see:
+```
+docker[…]: Error: No such container: docker_container__N
+```
+This is **harmless**. It comes from the `ExecStartPre=-/usr/bin/docker rm -f __APP__` in `conf/systemd.service`, which cleans up any leftover container from a previous run. The leading `-` tells systemd to ignore the failure when no prior container exists.
+
+---
+
 ## Gitea (Git Service)
 
 **Image**: `gitea/gitea:latest`  
