@@ -11,9 +11,13 @@ The full pinned list lives in `scripts/_common.sh` (`CURATED_IMAGES`):
 | `freshrss` | `freshrss/freshrss` | AGPL-3.0-only | 80 |
 | `uptime-kuma` | `louislam/uptime-kuma` | MIT | 3001 |
 | `ghost` | `ghost` | MIT | 2368 |
+| `moodle` | `erseco/alpine-moodle` | GPL-3.0-or-later | 8080 |
+| `gibbon` † | `kerrongordon/gibbon` | GPL-3.0-or-later | 80 |
 | `nginx` | `nginx` (alpine) | BSD-2-Clause | 80 |
 | `mariadb` | `mariadb` | GPL-2.0-only | 3306 |
 | `postgres` | `postgres` (alpine) | PostgreSQL | 5432 |
+
+† `gibbon` uses a **community, unofficial** image — no official GibbonEdu image exists, and this one is unmaintained (last updated 2024-01, pinned to v26).
 
 > Want an image that isn't here? Open a pull request adding it to `CURATED_IMAGES` (it must be free software with a clear license), or run it outside the official path via `yunohost app install <git_url>` / a custom catalog.
 
@@ -77,6 +81,25 @@ yunohost app list | grep docker_container
 
 ### `ghost` — Blogging platform (MIT)
 - Needs MariaDB — see the multi-container example above.
+
+### `moodle` — Learning management system (GPL-3.0)
+- Image: `erseco/alpine-moodle` (community wrapper, MIT; Moodle itself is GPL-3.0). Internal port **8080**.
+- **Needs a database.** Install `mariadb` (or `postgres`) on a shared Docker network, then point Moodle at it. Example, with a `mariadb` instance named `docker_container__1` on network `edu-network`:
+  ```
+  -e DB_TYPE=mariadb \
+  -e DB_HOST=docker_container__1 \
+  -e DB_NAME=moodle \
+  -e DB_USER=moodle \
+  -e DB_PASS=moodlepass \
+  -e SITE_URL=https://YOURDOMAIN.tld/PATH
+  ```
+  (The matching MariaDB instance is installed with `-e MARIADB_DATABASE=moodle -e MARIADB_USER=moodle -e MARIADB_PASSWORD=moodlepass -e MARIADB_ROOT_PASSWORD=rootpass`.)
+- For a quick single-container trial only, the image also supports SQLite via `-e DB_TYPE=sqlite3` — not recommended for real use.
+- First boot runs the Moodle installer and can take several minutes.
+
+### `gibbon` — School management platform (GPL-3.0)
+- ⚠️ **Community, unofficial, unmaintained image** (`kerrongordon/gibbon`, last updated 2024-01, pinned to `26.0.00` while upstream Gibbon is well beyond v26). No official GibbonEdu image exists. Treat as best-effort, not vetted to the same standard as the other entries. Internal port **80**.
+- Needs a MySQL/MariaDB database. Install `mariadb` on a shared network and complete Gibbon's web installer pointing at it (Gibbon configures the DB through its first-run wizard rather than env vars).
 
 ### `nginx` — Static web server (BSD-2-Clause)
 - Mount your site into the container via the data volume or an extra `-v` mount.

@@ -45,7 +45,7 @@ ram.runtime = "200M"
     ask.en = "Which application do you want to deploy? Only vetted free-software images are offered. The image reference, version and internal port are managed by the package."
     ask.fr = "Quelle application voulez-vous déployer ? Seules des images de logiciels libres vérifiées sont proposées. La référence de l'image, sa version et son port interne sont gérés par le paquet."
     type = "select"
-    choices = ["vaultwarden", "gitea", "freshrss", "uptime-kuma", "ghost", "nginx", "mariadb", "postgres"]
+    choices = ["vaultwarden", "gitea", "freshrss", "uptime-kuma", "ghost", "moodle", "gibbon", "nginx", "mariadb", "postgres"]
     default = "nginx"
 
     [install.restart_policy]

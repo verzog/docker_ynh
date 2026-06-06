@@ -23,9 +23,13 @@ Only the following images can be installed. Each is a known free-software applic
 | `freshrss` | `freshrss/freshrss` | AGPL-3.0-only | 80 |
 | `uptime-kuma` | `louislam/uptime-kuma` | MIT | 3001 |
 | `ghost` | `ghost` | MIT | 2368 |
+| `moodle` | `erseco/alpine-moodle` | GPL-3.0-or-later | 8080 |
+| `gibbon` † | `kerrongordon/gibbon` | GPL-3.0-or-later | 80 |
 | `nginx` | `nginx` (alpine) | BSD-2-Clause | 80 |
 | `mariadb` | `mariadb` | GPL-2.0-only | 3306 |
 | `postgres` | `postgres` (alpine) | PostgreSQL | 5432 |
+
+† **`gibbon`** uses a community, unofficial image (no official GibbonEdu image exists); it is unmaintained (last updated 2024-01, pinned to v26). **`moodle`** needs a database companion (`mariadb`/`postgres`) — see `DOCKER_IMAGES.md` for the recipe.
 
 The exact pinned versions live in `scripts/_common.sh` (the `CURATED_IMAGES` table). To propose adding an image, open a pull request — it should be free software with a clear license.
 

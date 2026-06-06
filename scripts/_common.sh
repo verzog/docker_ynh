@@ -21,6 +21,10 @@ declare -A CURATED_IMAGES=(
     [freshrss]="freshrss/freshrss:1.24.3|AGPL-3.0-only|80"
     [uptime-kuma]="louislam/uptime-kuma:1.23.16|MIT|3001"
     [ghost]="ghost:5.114.1|MIT|2368"
+    [moodle]="erseco/alpine-moodle:v5.2.1|GPL-3.0-or-later|8080"
+    # Community image — no official GibbonEdu image exists. Unmaintained
+    # (last updated 2024-01, pinned to v26); verify before relying on it.
+    [gibbon]="kerrongordon/gibbon:26.0.00|GPL-3.0-or-later|80"
     [nginx]="nginx:1.27.4-alpine|BSD-2-Clause|80"
     [mariadb]="mariadb:11.4.5|GPL-2.0-only|3306"
     [postgres]="postgres:16.8-alpine|PostgreSQL|5432"
