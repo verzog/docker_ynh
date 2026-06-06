@@ -32,9 +32,13 @@ Vous choisissez l'une de ces images vérifiées, à licence enregistrée et vers
 | `freshrss` | `freshrss/freshrss` | AGPL-3.0-only |
 | `uptime-kuma` | `louislam/uptime-kuma` | MIT |
 | `ghost` | `ghost` | MIT |
+| `moodle` | `erseco/alpine-moodle` | GPL-3.0-or-later |
+| `gibbon` † | `kerrongordon/gibbon` | GPL-3.0-or-later |
 | `nginx` | `nginx` (alpine) | BSD-2-Clause |
 | `mariadb` | `mariadb` | GPL-2.0-only |
 | `postgres` | `postgres` (alpine) | PostgreSQL |
+
+† **`gibbon`** utilise une image **communautaire, non officielle** — il n'existe pas d'image GibbonEdu officielle. Elle n'est pas maintenue (dernière mise à jour 2024-01, épinglée à v26) et accuse plusieurs versions de retard. À utiliser en connaissance de cause. `moodle` nécessite une base de données compagne (`mariadb`/`postgres`) — voir [`DOCKER_IMAGES.md`](./DOCKER_IMAGES.md).
 
 Les versions épinglées sont définies dans [`scripts/_common.sh`](./scripts/_common.sh). Pour proposer une nouvelle image, ouvrez une pull request — elle doit être un logiciel libre avec une licence claire.
 

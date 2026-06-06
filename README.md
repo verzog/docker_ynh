@@ -32,9 +32,13 @@ You choose one of these vetted, license-recorded, version-pinned images (no arbi
 | `freshrss` | `freshrss/freshrss` | AGPL-3.0-only |
 | `uptime-kuma` | `louislam/uptime-kuma` | MIT |
 | `ghost` | `ghost` | MIT |
+| `moodle` | `erseco/alpine-moodle` | GPL-3.0-or-later |
+| `gibbon` † | `kerrongordon/gibbon` | GPL-3.0-or-later |
 | `nginx` | `nginx` (alpine) | BSD-2-Clause |
 | `mariadb` | `mariadb` | GPL-2.0-only |
 | `postgres` | `postgres` (alpine) | PostgreSQL |
+
+† **`gibbon`** uses a **community, unofficial** image — there is no official GibbonEdu image. It is unmaintained (last updated 2024-01, pinned to v26) and several versions behind upstream. Use with that caveat. `moodle` requires a database companion (`mariadb`/`postgres`) — see [`DOCKER_IMAGES.md`](./DOCKER_IMAGES.md).
 
 The pinned versions are defined in [`scripts/_common.sh`](./scripts/_common.sh). To propose a new image, open a pull request — it must be free software with a clear license.
 
