@@ -6,17 +6,17 @@ Guide for YunoHost admins managing Docker containers via this app.
 
 When you install this package, you provide:
 
-1. **Container name**: A label for your container (e.g., "my-app")
-2. **Docker image**: The image to pull (e.g., `nginx:latest`)
-3. **Restart policy**: How the container handles crashes:
+1. **Application** (`image`): The app to deploy, chosen from a curated allowlist of vetted free-software images (e.g. `nginx`, `freshrss`, `gitea`). The package owns the exact image reference, pinned version, license and internal port — see the `CURATED_IMAGES` table in `scripts/_common.sh`. Arbitrary Docker Hub images are intentionally not installable.
+2. **Restart policy**: How the container handles crashes:
    - `always` — Restart immediately if it exits (use for production)
    - `unless-stopped` — Restart unless explicitly stopped (recommended)
    - `on-failure` — Restart only if exit code is non-zero
    - `no` — Never auto-restart (manual management)
-4. **Data volume**: Whether to mount persistent storage at `/data` (recommended for databases)
-5. **Mount Docker socket**: Whether to bind-mount `/var/run/docker.sock` into the container. Required for tools like Portainer that manage Docker. **Warning**: this grants the container root-equivalent access to the host — only enable for trusted images.
-6. **Docker network** (optional): A user-defined Docker network to attach the container to. Containers on the same network can resolve each other by name. Leave empty to use the default isolated bridge. The network is created automatically if it doesn't exist.
-7. **Custom Docker options**: Extra flags for `docker run` (e.g., `-e VAR=value`). Do **not** add port mappings here — host port mapping is handled by the app.
+3. **Data volume**: Whether to mount persistent storage at `/data` (recommended for databases)
+4. **Docker network** (optional): A user-defined Docker network to attach the container to. Containers on the same network can resolve each other by name. Leave empty to use the default isolated bridge. The network is created automatically if it doesn't exist.
+5. **Custom Docker options**: Extra flags for `docker run` (e.g., `-e VAR=value`). Do **not** add port mappings here — host port mapping is handled by the app.
+
+> The Docker socket is never mounted into containers, and every container runs with `--security-opt no-new-privileges`.
 
 ## Managing Your Container
 

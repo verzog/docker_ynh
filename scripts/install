@@ -4,11 +4,12 @@ source _common.sh
 source /usr/share/yunohost/helpers
 
 #=================================================
-# VALIDATE INPUTS
+# RESOLVE CURATED IMAGE
 #=================================================
-if [ "$container_port" -lt 1 ] || [ "$container_port" -gt 65535 ]; then
-    ynh_die "Invalid container_port '$container_port': must be between 1 and 65535."
-fi
+# Turn the selected key (e.g. "nginx") into a pinned, vetted free-software
+# image reference, its license and its internal port. Dies if the key is not
+# on the allowlist in _common.sh.
+resolve_curated_image "$image"
 
 #=================================================
 # GRANT APP USER ACCESS TO DOCKER
@@ -34,11 +35,11 @@ fi
 #=================================================
 # PULL DOCKER IMAGE
 #=================================================
-ynh_script_progression "Pulling Docker image $image..."
+ynh_script_progression "Pulling Docker image $image_ref..."
 
 pull_success=false
 for attempt in 1 2 3; do
-    if docker pull "$image" 2>&1; then
+    if docker pull "$image_ref" 2>&1; then
         pull_success=true
         break
     fi
@@ -50,7 +51,7 @@ for attempt in 1 2 3; do
 done
 
 if [ "$pull_success" = false ]; then
-    ynh_die "Failed to pull Docker image '$image' after 3 attempts."
+    ynh_die "Failed to pull Docker image '$image_ref' after 3 attempts."
 fi
 
 #=================================================
@@ -58,13 +59,14 @@ fi
 #=================================================
 ynh_script_progression "Computing container configuration..."
 
-compute_docker_config "$restart_policy" "$use_data_volume" "$data_dir" "$mount_docker_socket" "$docker_network"
+compute_docker_config "$restart_policy" "$use_data_volume" "$data_dir" "$docker_network"
 
+ynh_app_setting_set --key=image_ref --value="$image_ref"
+ynh_app_setting_set --key=image_license --value="$image_license"
 ynh_app_setting_set --key=container_port --value="$container_port"
 ynh_app_setting_set --key=docker_restart_policy --value="$docker_restart_policy"
 ynh_app_setting_set --key=docker_volume_opts --value="$docker_volume_opts"
 ynh_app_setting_set --key=docker_network_opt --value="$docker_network_opt"
-ynh_app_setting_set --key=mount_docker_socket --value="$mount_docker_socket"
 ynh_app_setting_set --key=docker_network --value="$docker_network"
 ynh_app_setting_set --key=restart_policy --value="$restart_policy"
 ynh_app_setting_set --key=use_data_volume --value="$use_data_volume"
@@ -84,7 +86,7 @@ ynh_script_progression "Configuring systemd service..."
 ynh_config_add_systemd
 
 yunohost service add "$app" \
-    --description="Docker container: $image"
+    --description="Docker container: $image_ref ($image_license)"
 
 #=================================================
 # ENSURE DOCKER NETWORK EXISTS
