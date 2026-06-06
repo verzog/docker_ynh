@@ -9,9 +9,29 @@ source /usr/share/yunohost/helpers
 ynh_script_progression "Ensuring downward compatibility..."
 
 # Backfill settings introduced in later versions so older installs can upgrade cleanly.
-ynh_app_setting_set_default --key=mount_docker_socket --value="0"
 ynh_app_setting_set_default --key=docker_network --value=""
 ynh_app_setting_set_default --key=docker_options --value=""
+
+#=================================================
+# RESOLVE IMAGE
+#=================================================
+# New installs store a curated key (e.g. "nginx"); legacy installs stored a raw
+# image reference (e.g. "nginx:alpine"). Resolve curated keys to their pinned,
+# vetted reference; keep legacy free-text references working as-is so existing
+# installs are not broken by the move to the curated allowlist.
+if [ -n "${CURATED_IMAGES[$image]:-}" ]; then
+    resolve_curated_image "$image"
+else
+    ynh_print_warn "Image '$image' is a legacy free-text reference, not a curated key. Keeping it as-is."
+    image_ref="$image"
+    image_license="$(ynh_app_setting_get --key=image_license)"
+    image_license="${image_license:-unknown}"
+    container_port="$(ynh_app_setting_get --key=container_port)"
+fi
+
+ynh_app_setting_set --key=image_ref --value="$image_ref"
+ynh_app_setting_set --key=image_license --value="$image_license"
+ynh_app_setting_set --key=container_port --value="$container_port"
 
 #=================================================
 # CREATE DOCKER NETWORK IF SPECIFIED
@@ -31,11 +51,11 @@ ynh_systemctl --service="$app" --action="stop"
 #=================================================
 # PULL LATEST IMAGE
 #=================================================
-ynh_script_progression "Pulling latest Docker image $image..."
+ynh_script_progression "Pulling Docker image $image_ref..."
 
 pull_success=false
 for attempt in 1 2 3; do
-    if docker pull "$image" 2>&1; then
+    if docker pull "$image_ref" 2>&1; then
         pull_success=true
         break
     fi
@@ -47,7 +67,7 @@ for attempt in 1 2 3; do
 done
 
 if [ "$pull_success" = false ]; then
-    ynh_die "Failed to pull Docker image '$image' after 3 attempts."
+    ynh_die "Failed to pull Docker image '$image_ref' after 3 attempts."
 fi
 
 docker rm "$app" 2>/dev/null || true
@@ -59,11 +79,9 @@ ynh_script_progression "Reapplying container configuration..."
 
 restart_policy=$(ynh_app_setting_get --key=restart_policy)
 use_data_volume=$(ynh_app_setting_get --key=use_data_volume)
-container_port=$(ynh_app_setting_get --key=container_port)
-mount_docker_socket=$(ynh_app_setting_get --key=mount_docker_socket)
 docker_network=$(ynh_app_setting_get --key=docker_network)
 
-compute_docker_config "$restart_policy" "$use_data_volume" "$data_dir" "$mount_docker_socket" "$docker_network"
+compute_docker_config "$restart_policy" "$use_data_volume" "$data_dir" "$docker_network"
 
 ynh_app_setting_set --key=docker_restart_policy --value="$docker_restart_policy"
 ynh_app_setting_set --key=docker_volume_opts --value="$docker_volume_opts"
@@ -78,7 +96,7 @@ ynh_config_add_nginx
 ynh_config_add_systemd
 
 yunohost service add "$app" \
-    --description="Docker container: $image"
+    --description="Docker container: $image_ref ($image_license)"
 
 #=================================================
 # START SERVICE

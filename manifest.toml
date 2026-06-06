@@ -7,7 +7,7 @@ name = "Docker Container"
 description.en = "Deploy and manage a Docker container on your YunoHost server"
 description.fr = "Déployez et gérez un conteneur Docker sur votre serveur YunoHost"
 
-version = "1.0~ynh1"
+version = "1.1~ynh1"
 
 maintainers = []
 
@@ -42,18 +42,11 @@ ram.runtime = "200M"
     default = "all_users"
 
     [install.image]
-    ask.en = "Docker image to pull (e.g. nginx:alpine, from hub.docker.com)"
-    ask.fr = "Image Docker à télécharger (ex: nginx:alpine, depuis hub.docker.com)"
-    type = "string"
-    example = "nginx:alpine"
-
-    [install.container_port]
-    ask.en = "Which port does the container expose internally? (e.g. 80 for nginx, 8080 for many Java apps)"
-    ask.fr = "Sur quel port le conteneur écoute-t-il en interne ? (ex: 80 pour nginx, 8080 pour les apps Java)"
-    type = "number"
-    min = 1
-    max = 65535
-    default = 80
+    ask.en = "Which application do you want to deploy? Only vetted free-software images are offered. The image reference, version and internal port are managed by the package."
+    ask.fr = "Quelle application voulez-vous déployer ? Seules des images de logiciels libres vérifiées sont proposées. La référence de l'image, sa version et son port interne sont gérés par le paquet."
+    type = "select"
+    choices = ["vaultwarden", "gitea", "freshrss", "uptime-kuma", "ghost", "nginx", "mariadb", "postgres"]
+    default = "nginx"
 
     [install.restart_policy]
     ask.en = "Should the container automatically restart if it stops?"
@@ -67,12 +60,6 @@ ram.runtime = "200M"
     ask.fr = "Monter un répertoire de données persistant dans le conteneur à /data ?"
     type = "boolean"
     default = true
-
-    [install.mount_docker_socket]
-    ask.en = "Mount the Docker socket into the container? Required for tools like Portainer that manage Docker. Warning: grants the container root-equivalent access to the host."
-    ask.fr = "Monter le socket Docker dans le conteneur ? Requis pour les outils comme Portainer qui gèrent Docker. Attention : donne au conteneur un accès équivalent à root sur l'hôte."
-    type = "boolean"
-    default = false
 
     [install.docker_network]
     ask.en = "Optional: Docker network name to connect with other containers (e.g., 'my-app-network'). Containers on the same network can reach each other by service name. Leave empty for default bridge network (isolated)."

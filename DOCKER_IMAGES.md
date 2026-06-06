@@ -1,289 +1,107 @@
-# Common Docker Images Setup Guide
+# Curated Images Setup Guide
 
-This guide provides setup instructions for popular Docker images when installing them with docker_ynh. Use these as reference when filling out the installation form.
+This guide covers the **vetted free-software images** that `docker_ynh` can install. You pick an application by its key in the install form (the `image` select); the package owns the exact image reference, pinned version and internal port — so there is no "Container Port" or "Mount Docker socket" field to set anymore.
+
+The full pinned list lives in `scripts/_common.sh` (`CURATED_IMAGES`):
+
+| Key | Image | License | Internal port |
+|---|---|---|---|
+| `vaultwarden` | `vaultwarden/server` | AGPL-3.0-only | 80 |
+| `gitea` | `gitea/gitea` | MIT | 3000 |
+| `freshrss` | `freshrss/freshrss` | AGPL-3.0-only | 80 |
+| `uptime-kuma` | `louislam/uptime-kuma` | MIT | 3001 |
+| `ghost` | `ghost` | MIT | 2368 |
+| `nginx` | `nginx` (alpine) | BSD-2-Clause | 80 |
+| `mariadb` | `mariadb` | GPL-2.0-only | 3306 |
+| `postgres` | `postgres` (alpine) | PostgreSQL | 5432 |
+
+> Want an image that isn't here? Open a pull request adding it to `CURATED_IMAGES` (it must be free software with a clear license), or run it outside the official path via `yunohost app install <git_url>` / a custom catalog.
 
 ## Multi-Container Setup with Docker Networks
 
-If you need multiple containers to communicate (e.g., Moodle + MariaDB), use the **Docker Network** option:
+Some apps need a database. Install each as its own instance and put them on a shared **Docker Network** so they reach each other by container name.
 
-### Example: Moodle + MariaDB on Same Network
+### Example: Ghost + MariaDB on the same network
 
-**Step 1: Install MariaDB**
-- Image: `mariadb:latest`
-- Container Port: `3306`
-- **Docker Network**: `education-network`
-- Docker Options: `-e MARIADB_ROOT_PASSWORD=rootpass -e MARIADB_USER=moodle -e MARIADB_PASSWORD=moodlepass -e MARIADB_DATABASE=moodle`
-
-**Step 2: Install Moodle**
-- Image: `lthub/moodle:latest`
-- Container Port: `80`
-- **Docker Network**: `education-network`
+**Step 1 — install `mariadb`**
+- Image (select): `mariadb`
+- **Docker Network**: `blog-network`
 - Docker Options:
   ```
-  -e MOODLE_DB_HOST=docker_container__1 \
-  -e MOODLE_DB_NAME=moodle \
-  -e MOODLE_DB_USER=moodle \
-  -e MOODLE_DB_PASSWORD=moodlepass
+  -e MARIADB_ROOT_PASSWORD=rootpass -e MARIADB_USER=ghost -e MARIADB_PASSWORD=ghostpass -e MARIADB_DATABASE=ghost
+  ```
+
+**Step 2 — install `ghost`**
+- Image (select): `ghost`
+- **Docker Network**: `blog-network`
+- Docker Options (replace `docker_container__1` with the actual MariaDB instance name):
+  ```
+  -e database__client=mysql \
+  -e database__connection__host=docker_container__1 \
+  -e database__connection__user=ghost \
+  -e database__connection__password=ghostpass \
+  -e database__connection__database=ghost
   ```
 
 **Key points:**
-- Both instances use the same Docker network name (`education-network`)
-- Moodle references MariaDB by container name (`docker_container__1` — use the actual app instance name)
-- Containers can reach each other directly without exposing ports to the host
-- Database port is not accessible from outside the network
+- Both instances use the same Docker network name (`blog-network`)
+- Ghost references MariaDB by container/instance name, not host IP
+- The database port stays on the network and is never exposed to the host or internet
 
-### Finding Container Names
-After installation, check the app instance name via:
+### Finding container names
 ```bash
 yunohost app list | grep docker_container
-# Output: docker_container__1 (MariaDB)
-# Output: docker_container__2 (Moodle)
+# e.g. docker_container__1 (mariadb)
+#      docker_container__2 (ghost)
 ```
-
-Use the container name from "Instance Name" in your docker_options for the app container.
 
 ---
 
-## MariaDB / MySQL (Database Server)
+## Per-image notes
 
-**Image**: `mariadb:latest` (or `mysql:8.0`)  
-**Container Port**: `3306`  
-**Mount Docker Socket**: `false`  
-**Data Volume**: `true` (required for persistence)
+### `vaultwarden` — Password manager (AGPL-3.0)
+- Data Volume: keep enabled (required for persistence)
+- Useful options: `-e SIGNUPS_ALLOWED=false` (and set `-e DOMAIN=https://vault.example.com` to your real URL)
 
-**Docker Options** (customize as needed):
-```
--e MARIADB_ROOT_PASSWORD=secure_root_password \
--e MARIADB_USER=appuser \
--e MARIADB_PASSWORD=secure_app_password \
--e MARIADB_DATABASE=appdb
-```
+### `gitea` — Git hosting (MIT)
+- Data Volume: keep enabled (required)
+- Uses SQLite by default (fine for small instances). For MariaDB/Postgres, put both on a Docker network and pass `-e GITEA__database__*` options.
 
-**For use with Docker Network:**
-- Install MariaDB first with a **Docker Network** name (e.g., `app-network`)
-- Other containers on the same network can reach it using the container name
-- Example: `-e DB_HOST=docker_container__1` (replace with actual MariaDB instance)
+### `freshrss` — RSS reader (AGPL-3.0)
+- Data Volume: keep enabled
+- Pairs well with `postgres` on a shared network for larger feeds.
 
-**Note**: Only expose this to the network, not to the internet (no NGINX frontend needed)
+### `uptime-kuma` — Uptime monitoring (MIT)
+- Data Volume: keep enabled (stores monitors/history)
+- No database container needed.
 
----
+### `ghost` — Blogging platform (MIT)
+- Needs MariaDB — see the multi-container example above.
 
-## Portainer (Docker Management)
+### `nginx` — Static web server (BSD-2-Clause)
+- Mount your site into the container via the data volume or an extra `-v` mount.
 
-**Image**: `portainer/portainer-ce:lts`  
-**Container Port**: `9000`  
-**Mount Docker Socket**: `true` (required)  
-**Docker Options**: *(leave empty)*
-
-Portainer needs access to the Docker daemon to manage containers. Enable "Mount Docker socket" during installation.
-
-### Google Safe Browsing false-positives
-
-Publicly reachable Portainer instances are occasionally flagged by Google Safe Browsing ("deceptive site ahead"). The login page is a generic credential form with minimal branding, which its phishing classifier trips on once the URL is crawled.
-
-If your instance gets flagged:
-
-1. **Request a review** in [Google Search Console](https://search.google.com/search-console) → *Security Issues* → *Request Review*. This is the only action that actually clears the warning (24–72h).
-2. **Stop exposing the URL publicly.** Don't paste it into READMEs, public issues, forums, or screenshots — crawlers feed the classifier.
-3. **Restrict the YunoHost permission** so the app isn't reachable anonymously:
-   ```bash
-   yunohost user permission update docker_container.main --remove visitors
-   ```
-   This puts the Portainer UI behind YunoHost SSO. Crawlers hit the SSO login instead of Portainer's, which sidesteps the heuristic.
-4. **Use the `:lts` tag** (shown above) rather than `:latest`, so you're not on a bleeding-edge build whose JS assets may already be flagged.
-
-The nginx template for this app sets `X-Robots-Tag: noindex, nofollow` and serves a restrictive `robots.txt` at `__PATH__/robots.txt` to discourage future crawling. That doesn't remove an existing warning — only the Search Console review does.
-
----
-
-## Moodle (Learning Management System)
-
-**Image**: `lthub/moodle:latest`  
-**Container Port**: `80`  
-**Mount Docker Socket**: `false`  
-**Docker Options**: 
-
-You need a separate database (MySQL/MariaDB). Choose one:
-
-### Option A: Separate Docker containers on same network (Recommended)
-1. Install MariaDB first with Docker Network: `moodle-network`
-2. Install Moodle with Docker Network: `moodle-network`
-3. Use docker_options (replace `docker_container__1` with actual MariaDB app name):
-```
--e MOODLE_DB_HOST=docker_container__1 \
--e MOODLE_DB_NAME=moodle \
--e MOODLE_DB_USER=moodle \
--e MOODLE_DB_PASSWORD=your_secure_password
-```
-
-**Benefits**: Clean separation, secure (no port exposure), easy to scale
-
-### Option B: External managed database
-```
--e MOODLE_DB_HOST=mysql.example.com \
--e MOODLE_DB_NAME=moodle \
--e MOODLE_DB_USER=moodle \
--e MOODLE_DB_PASSWORD=your_password \
--e MOODLE_DB_PORT=3306
-```
-
-### Option C: Host IP (temporary workaround)
-If you can't use networks, connect via host IP:
-```
--e MOODLE_DB_HOST=192.168.1.100:8096 \
--e MOODLE_DB_NAME=moodle \
--e MOODLE_DB_USER=moodle \
--e MOODLE_DB_PASSWORD=your_password
-```
-
-**Steps for Option A (recommended)**:
-1. Install MariaDB container first, note the instance name (e.g., `docker_container__1`)
-2. Install Moodle with docker_options pointing to MariaDB's instance name
-3. Both should be on the same `docker_network`
-4. Wait 5+ minutes on first start for initialization
-
----
-
-## Gitea (Git Service)
-
-**Image**: `gitea/gitea:latest`  
-**Container Port**: `3000`  
-**Mount Docker Socket**: `false`  
-**Data Volume**: `true` (required)
-
-**Docker Options** (optional, for database):
-```
--e GITEA__database__DB_TYPE=mysql \
--e GITEA__database__HOST=mariadb:3306 \
--e GITEA__database__NAME=gitea \
--e GITEA__database__USER=gitea \
--e GITEA__database__PASSWD=password
-```
-
-If no database options provided, Gitea uses SQLite (suitable for small instances).
-
----
-
-## Nextcloud (Cloud Storage)
-
-**Image**: `nextcloud:apache`  
-**Container Port**: `80`  
-**Mount Docker Socket**: `false`  
-**Data Volume**: `true` (required)
-
-**Docker Options** (for docker network - replace `docker_container__1` with MariaDB instance):
-```
--e MYSQL_DATABASE=nextcloud \
--e MYSQL_USER=nextcloud \
--e MYSQL_PASSWORD=your_password \
--e MYSQL_HOST=docker_container__1
-```
-
-**Docker Network**: Same as MariaDB instance (e.g., `nextcloud-network`)
-
-Without database options, Nextcloud uses SQLite (acceptable for personal use).
-
----
-
-## Nginx (Web Server)
-
-**Image**: `nginx:alpine`  
-**Container Port**: `80`  
-**Mount Docker Socket**: `false`  
-**Docker Options**: *(leave empty)*
-
-Simple static web server. Use `mount_docker_socket = false` (default).
-
----
-
-## WordPress (Blog/CMS)
-
-**Image**: `wordpress:apache`  
-**Container Port**: `80`  
-**Mount Docker Socket**: `false`  
-**Data Volume**: `true` (required for uploads)
-
-**Docker Options** (replace `docker_container__1` with MariaDB instance):
-```
--e WORDPRESS_DB_HOST=docker_container__1 \
--e WORDPRESS_DB_NAME=wordpress \
--e WORDPRESS_DB_USER=wordpress \
--e WORDPRESS_DB_PASSWORD=your_password
-```
-
-**Docker Network**: Same as MariaDB instance (e.g., `wordpress-network`)
-
----
-
-## Vaultwarden (Password Manager)
-
-**Image**: `vaultwarden/server:latest`  
-**Container Port**: `80`  
-**Mount Docker Socket**: `false`  
-**Data Volume**: `true` (required)
-
-**Docker Options** (optional):
-```
--e DOMAIN=https://vault.example.com \
--e SIGNUPS_ALLOWED=false
-```
+### `mariadb` / `postgres` — Databases
+- Backend services for the apps above. Install them with a **Docker Network** name and **no public access** — they don't need an NGINX frontend.
+- Provision the database/user via environment variables (`-e MARIADB_*` or `-e POSTGRES_*`).
 
 ---
 
 ## General Tips
 
-### Docker Networks for Multi-Container Apps
-
-Use the **Docker Network** option when you need multiple containers to communicate:
-
-**Benefits:**
-- ✅ Containers reach each other by name (no port exposure)
-- ✅ More secure (database port not exposed to host)
-- ✅ Easier to manage than using host IP
-- ✅ Service discovery built-in
-
-**Example workflow:**
-1. Install database container with network name: `myapp-network`
-2. Install app container with same network name: `myapp-network`
-3. App references database by container name: `-e DB_HOST=docker_container__1`
-
-**Note:** Containers on different networks cannot communicate. All containers must use the same network name.
-
-### Environment Variables
-Use `-e VAR=value` to set environment variables:
+### Environment variables
 ```
--e DATABASE_URL=mysql://user:pass@host/db \
--e API_KEY=your_key_here \
--e DEBUG=false
+-e VAR=value -e ANOTHER=value
 ```
 
-### Volume Mounts
-Mount additional directories with `-v`:
+### Extra volume mounts
 ```
--v /path/on/host:/path/in/container \
--v /var/log/app:/logs
+-v /path/on/host:/path/in/container
 ```
 
-### Docker Socket Access
-Only enable `mount_docker_socket = true` for:
-- **Portainer** (Docker management)
-- **Docker-in-Docker** setups
-- Other container orchestration tools
-
-**Warning**: This grants container root-equivalent access to the host.
-
-### Finding Image Documentation
-1. Visit `https://hub.docker.com/` and search for the image
-2. Check the README for required environment variables
-3. Look for examples in the "Environment Variables" section
-
-### Database Container Setup
-When running database as a separate container:
-1. Install database first with a **Docker Network** name
-2. Create database and user via docker_options environment variables
-3. Install app container on the same network
-4. Reference database by container name (not host IP)
-5. Example: `-e DB_HOST=docker_container__1` where `docker_container__1` is the database instance
+### Security
+- Containers run with `--security-opt no-new-privileges` and have **no** access to the Docker socket (the socket mount option was removed). Tools that require the Docker socket (e.g. Portainer) are intentionally not supported here — run those outside the official path if you need them.
+- Prefer images that run as a non-root user where possible.
 
 ---
 
@@ -291,23 +109,20 @@ When running database as a separate container:
 
 ### Container exits immediately
 - Check logs: `journalctl -u docker_container__N -n 50`
-- Verify required environment variables are set
-- Check image documentation for mandatory config
+- Verify required environment variables are set (see per-image notes)
 
 ### 503 Service Unavailable
-- Container is still starting (wait 1-2 minutes)
+- Container is still starting (wait 1–2 minutes)
 - Check logs for initialization errors
-- Verify port number matches image's listening port
 
-### Permission Denied errors
-- For socket mount issues: ensure `mount_docker_socket = true` is set
-- For file access: check volume mount permissions
+### Database connection fails (multi-container)
+- Confirm both instances share the same Docker network name
+- Confirm the app references the database by its instance name, not host IP
 
 ---
 
 ## Need Help?
 
-- Check image README on Docker Hub
-- Review journalctl logs: `journalctl -u docker_container__N -n 100`
+- Review logs: `journalctl -u docker_container__N -n 100`
 - View container logs: `docker logs docker_container__N`
-- Check NGINX error: `tail -50 /var/log/nginx/error.log`
+- Check NGINX error log: `tail -50 /var/log/nginx/error.log`

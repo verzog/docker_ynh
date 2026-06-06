@@ -60,9 +60,10 @@ When you run the YunoHost upgrade action:
 ## Recommendation: Test First
 
 If this is your first time using Docker with YunoHost:
-1. Start with a simple test image like `hello-world` to verify setup
-2. Graduate to lightweight servers like `nginx:latest` or `httpd:latest`
-3. Then deploy production workloads
+1. Start with the lightweight `nginx` choice to verify setup end to end
+2. Then deploy a heavier app from the curated list (e.g. `freshrss`, `gitea`)
+
+Only vetted free-software images from the curated allowlist can be installed; you no longer type an arbitrary image reference.
 
 ## Questions?
 

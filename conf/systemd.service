@@ -1,5 +1,5 @@
 [Unit]
-Description=Docker container: __IMAGE__ - YunoHost app __APP__
+Description=Docker container: __IMAGE_REF__ - YunoHost app __APP__
 Requires=docker.service
 After=docker.service
 
@@ -19,13 +19,14 @@ ExecStart=/usr/bin/docker run \
     --name=__APP__ \
     --log-driver=journald \
     --log-opt tag=__APP__ \
+    --security-opt=no-new-privileges \
     -e TZ=UTC \
     --volume /etc/timezone:/etc/timezone:ro \
     -p 127.0.0.1:__PORT__:__CONTAINER_PORT__ \
     __DOCKER_NETWORK_OPT__ \
     __DOCKER_VOLUME_OPTS__ \
     __DOCKER_OPTIONS__ \
-    __IMAGE__
+    __IMAGE_REF__
 
 ExecStop=-/usr/bin/docker stop __APP__
 ExecStopPost=-/usr/bin/docker rm -f __APP__

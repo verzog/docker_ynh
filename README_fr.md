@@ -15,45 +15,44 @@ Il ne doit pas être édité à la main.
 
 ## Vue d'ensemble
 
-Déployez et gérez des conteneurs Docker sur votre serveur YunoHost, chacun accessible via un domaine YunoHost avec proxy inverse NGINX. Les apps à conteneur unique fonctionnent directement ; les configurations multi-conteneurs (ex. web + base de données) sont prises en charge en installant chaque conteneur comme instance distincte et en les reliant via un réseau Docker partagé.
+Déployez et gérez un conteneur Docker **de logiciel libre vérifié** sur votre serveur YunoHost, accessible via un domaine YunoHost avec proxy inverse NGINX. Vous choisissez une application dans une liste blanche vérifiée ; le paquet gère la référence exacte de l'image, sa version épinglée, sa licence et son port interne. Les configurations multi-conteneurs (ex. app + base de données) sont prises en charge en installant chaque conteneur comme instance distincte et en les reliant via un réseau Docker partagé.
 
-**Version incluse :** 1.0~ynh1
+**Version incluse :** 1.1~ynh1
 
 ## Ce que cette app prend en charge
 
-### Apps à conteneur unique
+### Uniquement des images de logiciels libres vérifiées
 
-Une seule installation, pointez sur l'image, c'est prêt. Cas typiques :
+Vous choisissez l'une de ces images vérifiées, à licence enregistrée et version épinglée (pas d'images Docker Hub arbitraires) :
 
-| Image | Description |
-|---|---|
-| `vaultwarden/server` | Gestionnaire de mots de passe |
-| `gitea/gitea` | Hébergement Git |
-| `ghost` | Plateforme de blog |
-| `freshrss/freshrss` | Lecteur RSS |
-| `uptime-kuma/uptime-kuma` | Surveillance de disponibilité |
-| `joplin/server` | Synchronisation de notes |
-| `nginx:alpine` | Serveur de fichiers statiques |
+| Choix | Image | Licence |
+|---|---|---|
+| `vaultwarden` | `vaultwarden/server` | AGPL-3.0-only |
+| `gitea` | `gitea/gitea` | MIT |
+| `freshrss` | `freshrss/freshrss` | AGPL-3.0-only |
+| `uptime-kuma` | `louislam/uptime-kuma` | MIT |
+| `ghost` | `ghost` | MIT |
+| `nginx` | `nginx` (alpine) | BSD-2-Clause |
+| `mariadb` | `mariadb` | GPL-2.0-only |
+| `postgres` | `postgres` (alpine) | PostgreSQL |
+
+Les versions épinglées sont définies dans [`scripts/_common.sh`](./scripts/_common.sh). Pour proposer une nouvelle image, ouvrez une pull request — elle doit être un logiciel libre avec une licence claire.
 
 ### Apps multi-conteneurs
 
-Plusieurs conteneurs peuvent communiquer via un **réseau Docker défini par l'utilisateur**. Installez chaque conteneur comme instance distincte, donnez-leur le même nom de réseau dans le formulaire d'installation, et ils se référencent par nom de conteneur. Voir [`DOCKER_IMAGES.md`](./DOCKER_IMAGES.md) pour des recettes concrètes. Exemples :
-
-| App | Recette |
-|---|---|
-| **Moodle** + MariaDB | Instance MariaDB + instance Moodle sur un réseau partagé |
-| **Nextcloud** + MariaDB | Même principe, `MYSQL_HOST=<nom-instance-mariadb>` |
-| **WordPress** + MariaDB | Même principe avec `WORDPRESS_DB_HOST` |
+Plusieurs conteneurs peuvent communiquer via un **réseau Docker défini par l'utilisateur**. Installez chaque conteneur comme instance distincte, donnez-leur le même nom de réseau dans le formulaire d'installation, et ils se référencent par nom de conteneur. Voir [`DOCKER_IMAGES.md`](./DOCKER_IMAGES.md) pour des recettes concrètes (ex. `ghost` + `mariadb`).
 
 Pour les apps nécessitant une intégration YunoHost plus poussée (LDAP/SSO, provisionnement automatique de BDD, hooks de sauvegarde natifs), un paquet `_ynh` dédié reste recommandé — cette app échange cette intégration contre la flexibilité et la rapidité de mise en place.
 
 ## Avertissements / informations importantes
 
+- Seules les images de la liste blanche de logiciels libres peuvent être installées. Pour une image non listée, utilisez un catalogue personnalisé ou `yunohost app install <url_git>`.
 - Docker doit être installé sur le serveur avant d'installer cette app (`sudo apt install docker.io`)
+- Les conteneurs s'exécutent avec `--security-opt no-new-privileges` et le socket Docker n'est jamais monté à l'intérieur
 - Cette app ne s'intègre **pas** avec le SSO/LDAP de YunoHost — chaque conteneur fonctionne comme un service indépendant
 - Cette app ne fonctionnera **pas** si YunoHost lui-même s'exécute dans un conteneur Docker
 - Seules les données dans le volume `/data` monté sont sauvegardées — les données ailleurs dans le conteneur sont perdues lors d'une mise à jour
-- L'action de mise à jour re-télécharge l'image et recrée le conteneur
+- L'action de mise à jour re-télécharge l'image épinglée et recrée le conteneur
 
 ## Documentations et ressources
 

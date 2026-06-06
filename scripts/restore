@@ -20,13 +20,25 @@ if ! command -v docker &>/dev/null; then
 fi
 
 #=================================================
+# RESOLVE IMAGE
+#=================================================
+# Resolve curated keys to their pinned reference; keep legacy free-text
+# references working as-is.
+if [ -n "${CURATED_IMAGES[$image]:-}" ]; then
+    resolve_curated_image "$image"
+else
+    image_ref="$(ynh_app_setting_get --key=image_ref)"
+    image_ref="${image_ref:-$image}"
+fi
+
+#=================================================
 # PULL DOCKER IMAGE
 #=================================================
-ynh_script_progression "Pulling Docker image $image..."
+ynh_script_progression "Pulling Docker image $image_ref..."
 
 pull_success=false
 for attempt in 1 2 3; do
-    if docker pull "$image" 2>&1; then
+    if docker pull "$image_ref" 2>&1; then
         pull_success=true
         break
     fi
@@ -38,7 +50,7 @@ for attempt in 1 2 3; do
 done
 
 if [ "$pull_success" = false ]; then
-    ynh_die "Failed to pull Docker image '$image' after 3 attempts during restore."
+    ynh_die "Failed to pull Docker image '$image_ref' after 3 attempts during restore."
 fi
 
 #=================================================
@@ -77,9 +89,8 @@ ynh_script_progression "Reapplying container configuration..."
 
 restart_policy=$(ynh_app_setting_get --key=restart_policy)
 use_data_volume=$(ynh_app_setting_get --key=use_data_volume)
-mount_docker_socket=$(ynh_app_setting_get --key=mount_docker_socket)
 
-compute_docker_config "$restart_policy" "$use_data_volume" "$data_dir" "$mount_docker_socket" "$docker_network"
+compute_docker_config "$restart_policy" "$use_data_volume" "$data_dir" "$docker_network"
 
 ynh_app_setting_set --key=docker_restart_policy --value="$docker_restart_policy"
 ynh_app_setting_set --key=docker_volume_opts --value="$docker_volume_opts"
@@ -96,10 +107,11 @@ ynh_systemctl --service="nginx" --action="reload"
 #=================================================
 ynh_script_progression "Registering service with YunoHost..."
 
-image=$(ynh_app_setting_get --key=image)
+image_license="$(ynh_app_setting_get --key=image_license)"
+image_license="${image_license:-unknown}"
 
 yunohost service add "$app" \
-    --description="Docker container: $image"
+    --description="Docker container: $image_ref ($image_license)"
 
 #=================================================
 # START SERVICE

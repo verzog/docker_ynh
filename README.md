@@ -15,45 +15,44 @@ It shall NOT be edited by hand.
 
 ## Overview
 
-Deploy and manage Docker containers on your YunoHost server, each accessed via a YunoHost domain with NGINX reverse proxy. Single-container apps work out of the box; multi-container setups (e.g. web + database) are supported by installing each container as its own instance and attaching them to a shared Docker network.
+Deploy and manage a **vetted free-software** Docker container on your YunoHost server, accessed via a YunoHost domain with NGINX reverse proxy. You pick an application from a curated allowlist; the package owns the exact image reference, pinned version, license and internal port. Multi-container setups (e.g. app + database) are supported by installing each container as its own instance and attaching them to a shared Docker network.
 
-**Shipped version:** 1.0~ynh1
+**Shipped version:** 1.1~ynh1
 
 ## What this app supports
 
-### Single-container apps
+### Curated free-software images only
 
-Install once, point to the image, done. Typical fits:
+You choose one of these vetted, license-recorded, version-pinned images (no arbitrary Docker Hub images):
 
-| Image | What it is |
-|---|---|
-| `vaultwarden/server` | Password manager |
-| `gitea/gitea` | Git hosting |
-| `ghost` | Blogging platform |
-| `freshrss/freshrss` | RSS reader |
-| `uptime-kuma/uptime-kuma` | Uptime monitoring |
-| `joplin/server` | Notes sync server |
-| `nginx:alpine` | Static file server |
+| Choice | Image | License |
+|---|---|---|
+| `vaultwarden` | `vaultwarden/server` | AGPL-3.0-only |
+| `gitea` | `gitea/gitea` | MIT |
+| `freshrss` | `freshrss/freshrss` | AGPL-3.0-only |
+| `uptime-kuma` | `louislam/uptime-kuma` | MIT |
+| `ghost` | `ghost` | MIT |
+| `nginx` | `nginx` (alpine) | BSD-2-Clause |
+| `mariadb` | `mariadb` | GPL-2.0-only |
+| `postgres` | `postgres` (alpine) | PostgreSQL |
+
+The pinned versions are defined in [`scripts/_common.sh`](./scripts/_common.sh). To propose a new image, open a pull request — it must be free software with a clear license.
 
 ### Multi-container apps
 
-Multiple containers can communicate over a **user-defined Docker network**. Install each container as a separate app instance, assign them the same network name in the install form, and reference each other by container name. See [`DOCKER_IMAGES.md`](./DOCKER_IMAGES.md) for concrete recipes. Examples:
-
-| App | Recipe |
-|---|---|
-| **Moodle** + MariaDB | MariaDB instance + Moodle instance on a shared network |
-| **Nextcloud** + MariaDB | Same pattern, `MYSQL_HOST=<mariadb-instance-name>` |
-| **WordPress** + MariaDB | Same pattern with `WORDPRESS_DB_HOST` |
+Multiple containers can communicate over a **user-defined Docker network**. Install each container as a separate app instance, assign them the same network name in the install form, and reference each other by container name. See [`DOCKER_IMAGES.md`](./DOCKER_IMAGES.md) for concrete recipes (e.g. `ghost` + `mariadb`).
 
 For apps with deeper YunoHost integration requirements (LDAP/SSO, automatic DB provisioning, native backup hooks), a dedicated `_ynh` package remains the recommended path — this app trades that integration for flexibility and speed of setup.
 
 ## Disclaimers / important information
 
+- Only images on the curated free-software allowlist can be installed. To run an unlisted image, use a custom catalog or `yunohost app install <git_url>`.
 - Docker must be installed on your server before installing this app (`sudo apt install docker.io`)
+- Containers run with `--security-opt no-new-privileges` and the Docker socket is never mounted into them
 - This app does **not** integrate with YunoHost's SSO/LDAP — each container runs as an independent service
 - This app will **not** work if YunoHost itself is running inside a Docker container
 - Only data stored in the mounted `/data` volume is included in YunoHost backups — data stored elsewhere inside the container is lost on upgrade
-- Running the upgrade action re-pulls the image and recreates the container
+- Running the upgrade action re-pulls the pinned image and recreates the container
 
 ## Documentation and resources
 
