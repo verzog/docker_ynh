@@ -35,26 +35,39 @@ Restart=no
 RestartSec=10
 
 ### Security hardening
-### Note: PrivateDevices, RestrictNamespaces, NoNewPrivileges, SystemCallFilter are
-### intentionally omitted — they are incompatible with running Docker containers.
-### Running as a dedicated system user in the docker group is the primary mitigation.
+### This unit runs the `docker` *client*, which only connects to the Docker
+### daemon over /var/run/docker.sock; dockerd creates and runs the container
+### itself, so sandboxing this process does not constrain the container. We can
+### therefore apply the full example_ynh hardening baseline to the client.
+### Baseline: https://github.com/YunoHost/example_ynh/blob/main/conf/systemd.service
+NoNewPrivileges=yes
 PrivateTmp=yes
+PrivateDevices=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+RestrictNamespaces=yes
+RestrictRealtime=yes
+DevicePolicy=closed
 ProtectClock=yes
 ProtectHostname=yes
+ProtectProc=invisible
+ProtectSystem=full
+ProtectHome=yes
+ProtectControlGroups=yes
 ProtectKernelLogs=yes
 ProtectKernelModules=yes
 ProtectKernelTunables=yes
-ProtectControlGroups=yes
-ProtectSystem=full
-ProtectHome=yes
-ProtectProc=invisible
-RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
-RestrictRealtime=yes
 LockPersonality=yes
 SystemCallArchitectures=native
+SystemCallFilter=~@clock @debug @module @mount @obsolete @reboot @setuid @swap @cpu-emulation @privileged
 CapabilityBoundingSet=~CAP_RAWIO CAP_MKNOD
 CapabilityBoundingSet=~CAP_AUDIT_CONTROL CAP_AUDIT_READ CAP_AUDIT_WRITE
 CapabilityBoundingSet=~CAP_SYS_BOOT CAP_SYS_TIME CAP_SYS_MODULE CAP_SYS_PACCT
+CapabilityBoundingSet=~CAP_LEASE CAP_LINUX_IMMUTABLE CAP_IPC_LOCK
+CapabilityBoundingSet=~CAP_BLOCK_SUSPEND CAP_WAKE_ALARM
+CapabilityBoundingSet=~CAP_SYS_TTY_CONFIG
+CapabilityBoundingSet=~CAP_MAC_ADMIN CAP_MAC_OVERRIDE
+CapabilityBoundingSet=~CAP_NET_ADMIN CAP_NET_BROADCAST CAP_NET_RAW
+CapabilityBoundingSet=~CAP_SYS_ADMIN CAP_SYS_PTRACE CAP_SYSLOG
 
 StandardOutput=journal
 StandardError=journal
