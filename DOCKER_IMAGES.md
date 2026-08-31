@@ -86,17 +86,8 @@ yunohost app list | grep docker_container
 - Image: `erseco/alpine-moodle` (community wrapper, MIT; Moodle itself is GPL-3.0). Internal port **8080**.
 - **Version:** currently pinned to Moodle **5.2.2** (latest stable 5.2.x). YunoHost's native `moodle_ynh` package doesn't yet ship the 5.2/5.3 series, so this Docker path is the way to test them.
 - **Moodle 5.3 (LTS):** staged but not yet enabled. Moodle 5.3 releases 2026-10-05 and the `erseco/alpine-moodle` image has no `v5.3.x` tag yet, so there is nothing to pin. A commented `moodle-53` slot is prepared in [`scripts/_common.sh`](./scripts/_common.sh); once upstream publishes a 5.3 tag, uncomment it (updating the patch level) and add `moodle-53` to the `image` choices in `manifest.toml` to install 5.2.x and 5.3.x side by side.
-- **Needs a database.** Install `mariadb` (or `postgres`) on a shared Docker network, then point Moodle at it. Example, with a `mariadb` instance named `docker_container__1` on network `edu-network`:
-  ```
-  -e DB_TYPE=mariadb \
-  -e DB_HOST=docker_container__1 \
-  -e DB_NAME=moodle \
-  -e DB_USER=moodle \
-  -e DB_PASS=moodlepass \
-  -e SITE_URL=https://YOURDOMAIN.tld/PATH
-  ```
-  (The matching MariaDB instance is installed with `-e MARIADB_DATABASE=moodle -e MARIADB_USER=moodle -e MARIADB_PASSWORD=moodlepass -e MARIADB_ROOT_PASSWORD=rootpass`.)
-- **PostgreSQL (recommended by the image for production).** The `erseco/alpine-moodle` image actually defaults to `DB_TYPE=pgsql`. To use the curated `postgres` container instead of MariaDB, install a `postgres` instance on the shared network and point Moodle at it with `DB_TYPE=pgsql` / port `5432`. Example, with a `postgres` instance named `docker_container__1` on network `edu-network`:
+- **Needs a database.** Install `postgres` (recommended) or `mariadb` on a shared Docker network, then point Moodle at it.
+- **PostgreSQL (recommended — the image's default engine).** The `erseco/alpine-moodle` image defaults to `DB_TYPE=pgsql` and recommends PostgreSQL for production. Install a `postgres` instance on the shared network and point Moodle at it. Example, with a `postgres` instance named `docker_container__1` on network `edu-network`:
   ```
   -e DB_TYPE=pgsql \
   -e DB_HOST=docker_container__1 \
@@ -107,6 +98,16 @@ yunohost app list | grep docker_container
   -e SITE_URL=https://YOURDOMAIN.tld/PATH
   ```
   (The matching PostgreSQL instance is installed with `-e POSTGRES_DB=moodle -e POSTGRES_USER=moodle -e POSTGRES_PASSWORD=moodlepass`.)
+- **MariaDB (alternative).** To use MariaDB instead, install a `mariadb` instance on the shared network and set `DB_TYPE=mariadb` / port `3306`. Example, with a `mariadb` instance named `docker_container__1`:
+  ```
+  -e DB_TYPE=mariadb \
+  -e DB_HOST=docker_container__1 \
+  -e DB_NAME=moodle \
+  -e DB_USER=moodle \
+  -e DB_PASS=moodlepass \
+  -e SITE_URL=https://YOURDOMAIN.tld/PATH
+  ```
+  (The matching MariaDB instance is installed with `-e MARIADB_DATABASE=moodle -e MARIADB_USER=moodle -e MARIADB_PASSWORD=moodlepass -e MARIADB_ROOT_PASSWORD=rootpass`.)
 - For a quick single-container trial only, the image also supports SQLite via `-e DB_TYPE=sqlite3` — not recommended for real use.
 - First boot runs the Moodle installer and can take several minutes.
 
