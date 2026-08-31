@@ -87,6 +87,7 @@ yunohost app list | grep docker_container
 - **Version:** currently pinned to Moodle **5.2.2** (latest stable 5.2.x). YunoHost's native `moodle_ynh` package doesn't yet ship the 5.2/5.3 series, so this Docker path is the way to test them.
 - **Moodle 5.3 (LTS):** staged but not yet enabled. Moodle 5.3 releases 2026-10-05 and the `erseco/alpine-moodle` image has no `v5.3.x` tag yet, so there is nothing to pin. A commented `moodle-53` slot is prepared in [`scripts/_common.sh`](./scripts/_common.sh); once upstream publishes a 5.3 tag, uncomment it (updating the patch level) and add `moodle-53` to the `image` choices in `manifest.toml` to install 5.2.x and 5.3.x side by side.
 - **Needs a database.** Install `postgres` (recommended) or `mariadb` on a shared Docker network, then point Moodle at it.
+- ⚠️ **Persist the database.** The container is recreated on every service restart/upgrade (`conf/systemd.service` runs `docker rm` on stop), so **only files under the package's `/data` volume survive**. A database stores its files *outside* `/data` by default (`/var/lib/postgresql/data` for Postgres, `/var/lib/mysql` for MariaDB), so each DB instance below must relocate or bind-mount its data directory — otherwise the database is wiped on the next restart. Keep the **Data Volume** enabled on the DB instance.
 - **PostgreSQL (recommended — the image's default engine).** The `erseco/alpine-moodle` image defaults to `DB_TYPE=pgsql` and recommends PostgreSQL for production. Install a `postgres` instance on the shared network and point Moodle at it. Example, with a `postgres` instance named `docker_container__1` on network `edu-network`:
   ```
   -e DB_TYPE=pgsql \
@@ -97,7 +98,7 @@ yunohost app list | grep docker_container
   -e DB_PASS=moodlepass \
   -e SITE_URL=https://YOURDOMAIN.tld/PATH
   ```
-  (The matching PostgreSQL instance is installed with `-e POSTGRES_DB=moodle -e POSTGRES_USER=moodle -e POSTGRES_PASSWORD=moodlepass`.)
+  (The matching PostgreSQL instance is installed with `-e POSTGRES_DB=moodle -e POSTGRES_USER=moodle -e POSTGRES_PASSWORD=moodlepass -e PGDATA=/data/pgdata`. `PGDATA=/data/pgdata` is what makes the cluster persistent — it stores the data in a subdirectory of the package's `/data` volume, which survives the container being recreated. Without it the database lives in the container's ephemeral layer and is lost on restart.)
 - **MariaDB (alternative).** To use MariaDB instead, install a `mariadb` instance on the shared network and set `DB_TYPE=mariadb` / port `3306`. Example, with a `mariadb` instance named `docker_container__1`:
   ```
   -e DB_TYPE=mariadb \
@@ -107,7 +108,7 @@ yunohost app list | grep docker_container
   -e DB_PASS=moodlepass \
   -e SITE_URL=https://YOURDOMAIN.tld/PATH
   ```
-  (The matching MariaDB instance is installed with `-e MARIADB_DATABASE=moodle -e MARIADB_USER=moodle -e MARIADB_PASSWORD=moodlepass -e MARIADB_ROOT_PASSWORD=rootpass`.)
+  (The matching MariaDB instance is installed with `-e MARIADB_DATABASE=moodle -e MARIADB_USER=moodle -e MARIADB_PASSWORD=moodlepass -e MARIADB_ROOT_PASSWORD=rootpass`. Unlike Postgres, the MariaDB image can't relocate its data directory by env var, so add a persistent bind mount for `/var/lib/mysql` in that instance's **Docker Options** field — e.g. `-v /home/yunohost.app/<mariadb-instance>/mysql:/var/lib/mysql` (any persistent host path works). Without it the database is wiped when the container is recreated on restart.)
 - For a quick single-container trial only, the image also supports SQLite via `-e DB_TYPE=sqlite3` — not recommended for real use.
 - First boot runs the Moodle installer and can take several minutes.
 
