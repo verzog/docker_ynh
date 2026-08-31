@@ -96,6 +96,17 @@ yunohost app list | grep docker_container
   -e SITE_URL=https://YOURDOMAIN.tld/PATH
   ```
   (The matching MariaDB instance is installed with `-e MARIADB_DATABASE=moodle -e MARIADB_USER=moodle -e MARIADB_PASSWORD=moodlepass -e MARIADB_ROOT_PASSWORD=rootpass`.)
+- **PostgreSQL (recommended by the image for production).** The `erseco/alpine-moodle` image actually defaults to `DB_TYPE=pgsql`. To use the curated `postgres` container instead of MariaDB, install a `postgres` instance on the shared network and point Moodle at it with `DB_TYPE=pgsql` / port `5432`. Example, with a `postgres` instance named `docker_container__1` on network `edu-network`:
+  ```
+  -e DB_TYPE=pgsql \
+  -e DB_HOST=docker_container__1 \
+  -e DB_PORT=5432 \
+  -e DB_NAME=moodle \
+  -e DB_USER=moodle \
+  -e DB_PASS=moodlepass \
+  -e SITE_URL=https://YOURDOMAIN.tld/PATH
+  ```
+  (The matching PostgreSQL instance is installed with `-e POSTGRES_DB=moodle -e POSTGRES_USER=moodle -e POSTGRES_PASSWORD=moodlepass`.)
 - For a quick single-container trial only, the image also supports SQLite via `-e DB_TYPE=sqlite3` — not recommended for real use.
 - First boot runs the Moodle installer and can take several minutes.
 
