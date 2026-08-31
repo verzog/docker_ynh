@@ -21,7 +21,15 @@ declare -A CURATED_IMAGES=(
     [freshrss]="freshrss/freshrss:1.24.3|AGPL-3.0-only|80"
     [uptime-kuma]="louislam/uptime-kuma:1.23.16|MIT|3001"
     [ghost]="ghost:5.114.1|MIT|2368"
-    [moodle]="erseco/alpine-moodle:v5.2.1|GPL-3.0-or-later|8080"
+    [moodle]="erseco/alpine-moodle:v5.2.2|GPL-3.0-or-later|8080"
+    # Moodle 5.3 (LTS) staging slot — kept commented until upstream ships it.
+    # Moodle 5.3 releases 2026-10-05 (code freeze 2026-08-31); the
+    # erseco/alpine-moodle image has no v5.3.x tag yet. When it does, verify the
+    # tag on Docker Hub, uncomment the line below (updating the patch level), and
+    # add "moodle-53" to the `image` choices list in manifest.toml so it becomes
+    # selectable. Until then it stays off the allowlist so installs can't request
+    # an image that does not exist.
+    # [moodle-53]="erseco/alpine-moodle:v5.3.0|GPL-3.0-or-later|8080"
     # Community image — no official GibbonEdu image exists. Unmaintained
     # (last updated 2024-01, pinned to v26); verify before relying on it.
     [gibbon]="kerrongordon/gibbon:26.0.00|GPL-3.0-or-later|80"

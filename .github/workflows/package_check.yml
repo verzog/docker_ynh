@@ -1,0 +1,68 @@
+# Full YunoHost integration tests via package_check.
+#
+# package_check installs this package on a real YunoHost system inside an
+# LXD/Incus container and runs the whole matrix declared in tests.toml
+# (install, remove, upgrade, backup/restore, change_url, multi-instance, …).
+#
+# It CANNOT run on GitHub-hosted runners: it needs LXD/Incus, conflicts with
+# Docker on the host, and this package additionally launches Docker containers
+# *inside* the test container, so the runner must allow nested containers
+# (security.nesting=true / Docker-in-LXD). This workflow therefore targets a
+# self-hosted runner labelled "yunohost". Until such a runner is registered the
+# job simply never picks up — it does not run (and does not block) on the
+# default hosted runners.
+#
+# Setup guide: .github/PACKAGE_CHECK_CI.md
+name: Package check (full YunoHost tests)
+
+on:
+  # Trigger manually from the Actions tab (pick any branch).
+  workflow_dispatch:
+  # Or run on a PR on demand by adding the "package_check" label to it.
+  pull_request:
+    types: [labeled]
+
+concurrency:
+  group: package-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package_check:
+    # Only run for a manual dispatch, or when a PR gets the "package_check" label.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.label.name == 'package_check')
+    # Requires a self-hosted runner with LXD/Incus + Docker-in-LXD nesting.
+    runs-on: [self-hosted, yunohost]
+    # package_check can take a while (multiple install/upgrade/backup cycles).
+    timeout-minutes: 120
+
+    steps:
+      - name: Check out the package
+        uses: actions/checkout@v4
+        with:
+          path: package
+
+      - name: Fetch package_check
+        run: |
+          rm -rf package_check
+          git clone --depth=1 https://github.com/YunoHost/package_check package_check
+
+      - name: Run package_check against this branch
+        run: |
+          cd package_check
+          # Point package_check at the checked-out package directory. It builds a
+          # clean YunoHost container, applies tests.toml, and exits non-zero if
+          # any scenario fails.
+          ./package_check.sh "${GITHUB_WORKSPACE}/package"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-check-results
+          path: |
+            package_check/Test_results.log
+            package_check/results/
+          if-no-files-found: warn
+          retention-days: 14
