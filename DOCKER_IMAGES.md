@@ -11,7 +11,8 @@ The full pinned list lives in `scripts/_common.sh` (`CURATED_IMAGES`):
 | `freshrss` | `freshrss/freshrss` | AGPL-3.0-only | 80 |
 | `uptime-kuma` | `louislam/uptime-kuma` | MIT | 3001 |
 | `ghost` | `ghost` | MIT | 2368 |
-| `moodle` | `erseco/alpine-moodle` | GPL-3.0-or-later | 8080 |
+| `moodle` | `erseco/alpine-moodle` (5.2.x) | GPL-3.0-or-later | 8080 |
+| `moodle-53` | `erseco/alpine-moodle` (5.3 LTS) | GPL-3.0-or-later | 8080 |
 | `gibbon` † | `kerrongordon/gibbon` | GPL-3.0-or-later | 80 |
 | `nginx` | `nginx` (alpine) | BSD-2-Clause | 80 |
 | `mariadb` | `mariadb` | GPL-2.0-only | 3306 |
@@ -84,8 +85,11 @@ yunohost app list | grep docker_container
 
 ### `moodle` — Learning management system (GPL-3.0)
 - Image: `erseco/alpine-moodle` (community wrapper, MIT; Moodle itself is GPL-3.0). Internal port **8080**.
-- **Version:** currently pinned to Moodle **5.2.2** (latest stable 5.2.x). YunoHost's native `moodle_ynh` package doesn't yet ship the 5.2/5.3 series, so this Docker path is the way to test them.
-- **Moodle 5.3 (LTS):** staged but not yet enabled. Moodle 5.3 releases 2026-10-05 and the `erseco/alpine-moodle` image has no `v5.3.x` tag yet, so there is nothing to pin. A commented `moodle-53` slot is prepared in [`scripts/_common.sh`](./scripts/_common.sh); once upstream publishes a 5.3 tag, uncomment it (updating the patch level) and add `moodle-53` to the `image` choices in `manifest.toml` to install 5.2.x and 5.3.x side by side.
+- **Versions:** two curated keys so you can run them side by side —
+  - `moodle` → Moodle **5.2.4** (latest stable 5.2.x)
+  - `moodle-53` → Moodle **5.3.0** (the 5.3 LTS, released 2026-10-05)
+
+  Both use the same `erseco/alpine-moodle` image, internal port **8080**, and the DB setup below. YunoHost's native `moodle_ynh` package doesn't yet ship the 5.2/5.3 series, so this Docker path is the way to test them. Install each as its own instance (optionally on separate Docker networks + DB instances) to compare 5.2 and 5.3.
 - **Needs a database.** Install `postgres` (recommended) or `mariadb` on a shared Docker network, then point Moodle at it.
 - ⚠️ **Persist the database.** The container is recreated on every service restart/upgrade (`conf/systemd.service` runs `docker rm` on stop), so **only files under the package's `/data` volume survive**. A database stores its files *outside* `/data` by default (`/var/lib/postgresql/data` for Postgres, `/var/lib/mysql` for MariaDB), so each DB instance below must relocate or bind-mount its data directory — otherwise the database is wiped on the next restart. Keep the **Data Volume** enabled on the DB instance.
 - **PostgreSQL (recommended — the image's default engine).** The `erseco/alpine-moodle` image defaults to `DB_TYPE=pgsql` and recommends PostgreSQL for production. Install a `postgres` instance on the shared network and point Moodle at it. Example, with a `postgres` instance named `docker_container__1` on network `edu-network`:
