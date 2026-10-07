@@ -8,3 +8,15 @@ test_format = 1.0
     args.restart_policy = "no"
     args.use_data_volume = false
     args.docker_options = ""
+
+# Exercises the Moodle code paths (persistent moodledata/html mounts + chown,
+# 64-bit arch gate, generated admin password, required data volume) end to end.
+# Uses SQLite so Moodle is a single self-contained container — no DB companion
+# is needed, which package_check's single-app model can't provision. The admin
+# password is left to auto-generate (the optional moodle_password defaults empty).
+[moodle]
+
+    args.image = "moodle"
+    args.restart_policy = "no"
+    args.use_data_volume = true
+    args.docker_options = "-e DB_TYPE=sqlite3"
