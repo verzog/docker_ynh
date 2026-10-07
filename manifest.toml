@@ -76,6 +76,14 @@ ram.runtime = "200M"
     optional = true
     default = ""
 
+    [install.moodle_password]
+    ask.en = "Moodle admin password (for the 'admin' account). Leave empty to auto-generate a strong one — you can read it afterwards with 'yunohost app setting <app> moodle_password'. Only used on first install."
+    ask.fr = "Mot de passe administrateur Moodle (compte « admin »). Laisser vide pour en générer un automatiquement — récupérable ensuite avec « yunohost app setting <app> moodle_password ». Utilisé uniquement à la première installation."
+    type = "password"
+    optional = true
+    default = ""
+    visible = "image == 'moodle' || image == 'moodle-53'"
+
 [resources]
 
     [resources.system_user]

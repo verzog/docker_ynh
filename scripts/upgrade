@@ -29,6 +29,10 @@ else
     container_port="$(ynh_app_setting_get --key=container_port)"
 fi
 
+# Reject Moodle on a 32-bit host before stopping the service (the pinned image is
+# 64-bit only); failing here avoids downtime from a stop followed by a failed pull.
+moodle_arch_guard "$image"
+
 ynh_app_setting_set --key=image_ref --value="$image_ref"
 ynh_app_setting_set --key=image_license --value="$image_license"
 ynh_app_setting_set --key=container_port --value="$container_port"
@@ -81,7 +85,13 @@ restart_policy=$(ynh_app_setting_get --key=restart_policy)
 use_data_volume=$(ynh_app_setting_get --key=use_data_volume)
 docker_network=$(ynh_app_setting_get --key=docker_network)
 
-compute_docker_config "$restart_policy" "$use_data_volume" "$data_dir" "$docker_network"
+# Ensure Moodle's persistent state dirs exist (and are owned by the container's
+# user) before recreating the container — covers installs predating this change.
+if is_moodle_image "$image" && [ "$use_data_volume" -eq 1 ]; then
+    prepare_moodle_state_dirs "$data_dir"
+fi
+
+compute_docker_config "$restart_policy" "$use_data_volume" "$data_dir" "$docker_network" "$image"
 
 ynh_app_setting_set --key=docker_restart_policy --value="$docker_restart_policy"
 ynh_app_setting_set --key=docker_volume_opts --value="$docker_volume_opts"

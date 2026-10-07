@@ -53,6 +53,49 @@ resolve_curated_image() {
     export image_ref image_license container_port
 }
 
+#=================================================
+# MOODLE-SPECIFIC HELPERS
+#=================================================
+# The erseco/alpine-moodle image needs extra care that the generic path does not:
+# it keeps state outside /data, ships only 64-bit variants, and defaults to a
+# well-known admin password. These helpers are gated on the Moodle keys so every
+# other curated image behaves exactly as before.
+
+# The container runs as the Alpine "nobody" user (uid/gid 65534) and starts
+# non-root, so it cannot chown its bind mounts — the host dirs must already be
+# owned by this id or Moodle cannot write uploads/sessions.
+MOODLE_CONTAINER_UID=65534
+
+# Return 0 if the given curated key is a Moodle image.
+is_moodle_image() {
+    case "$1" in
+        moodle | moodle-53) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Refuse Moodle on a 32-bit host. From v5.2.4 / v5.3.0 the image publishes only
+# 64-bit platforms (amd64/arm64/ppc64el/s390x); on i386/armhf the pinned tag
+# cannot be pulled. Call this BEFORE pulling (install) and BEFORE stopping the
+# running service (upgrade) so a 32-bit box is rejected without downtime.
+moodle_arch_guard() {
+    is_moodle_image "$1" || return 0
+    local arch
+    arch="$(dpkg --print-architecture 2>/dev/null || echo unknown)"
+    case "$arch" in
+        armhf | armel | i386 | i686)
+            ynh_die "Moodle (image key '$1') is 64-bit only: erseco/alpine-moodle v5.2.4+/v5.3.0 publish no 32-bit variant, so the image cannot be pulled on this '$arch' host. Install Moodle on a 64-bit (amd64/arm64) server."
+            ;;
+    esac
+}
+
+# Create and permission Moodle's persistent state directories under $data_dir.
+prepare_moodle_state_dirs() {
+    local data_dir="$1"
+    mkdir -p "$data_dir/moodledata" "$data_dir/html"
+    chown "$MOODLE_CONTAINER_UID:$MOODLE_CONTAINER_UID" "$data_dir/moodledata" "$data_dir/html"
+}
+
 # Compute Docker run configuration based on install settings.
 # Sets $docker_restart_policy, $docker_volume_opts, and $docker_network_opt for use in systemd template.
 compute_docker_config() {
@@ -60,6 +103,7 @@ compute_docker_config() {
     local use_data_volume="$2"
     local data_dir="$3"
     local docker_network="${4:-}"
+    local image_key="${5:-}"
 
     case "$restart_policy" in
         "always")
@@ -79,6 +123,16 @@ compute_docker_config() {
     docker_volume_opts=""
     if [ "$use_data_volume" -eq 1 ]; then
         docker_volume_opts="-v $data_dir:/data"
+    fi
+
+    # Moodle keeps uploads/backups in /var/www/moodledata and code/plugins/config
+    # in /var/www/html, neither relocatable by env var. The container is recreated
+    # on every restart (conf/systemd.service runs `docker rm` on stop), so without
+    # these bind mounts Moodle loses all uploaded files and installed plugins on
+    # the first restart or upgrade. (Moodle also requires the data volume — install
+    # dies if it is disabled — so these mounts always accompany the /data mount.)
+    if is_moodle_image "$image_key" && [ "$use_data_volume" -eq 1 ]; then
+        docker_volume_opts="$docker_volume_opts -v $data_dir/moodledata:/var/www/moodledata -v $data_dir/html:/var/www/html"
     fi
 
     docker_network_opt=""

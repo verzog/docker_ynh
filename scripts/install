@@ -11,6 +11,9 @@ source /usr/share/yunohost/helpers
 # on the allowlist in _common.sh.
 resolve_curated_image "$image"
 
+# Reject Moodle on a 32-bit host before pulling (the pinned image is 64-bit only).
+moodle_arch_guard "$image"
+
 #=================================================
 # GRANT APP USER ACCESS TO DOCKER
 #=================================================
@@ -59,7 +62,34 @@ fi
 #=================================================
 ynh_script_progression "Computing container configuration..."
 
-compute_docker_config "$restart_policy" "$use_data_volume" "$data_dir" "$docker_network"
+#=================================================
+# MOODLE HARDENING (persistence + admin credentials)
+#=================================================
+if is_moodle_image "$image"; then
+    # Moodle stores uploads/plugins/config outside the container's writable layer,
+    # which conf/systemd.service discards on every stop — persistence is mandatory.
+    if [ "$use_data_volume" -ne 1 ]; then
+        ynh_die "Moodle requires the persistent data volume. Re-install with 'Mount a persistent data directory' enabled; otherwise uploads, installed plugins and configuration are lost on the first restart or upgrade."
+    fi
+
+    ynh_script_progression "Preparing Moodle persistent storage..."
+    prepare_moodle_state_dirs "$data_dir"
+
+    # The image ships a well-known default admin (moodleuser / PLEASE_CHANGEME).
+    # Unless the admin supplied their own MOODLE_PASSWORD in docker_options,
+    # generate one so a fresh instance is not trivially takeover-able.
+    if [[ "$docker_options" != *MOODLE_PASSWORD* ]]; then
+        if [ -z "${moodle_password:-}" ]; then
+            moodle_password="$(ynh_string_random --length=24)"
+        fi
+        docker_options="-e MOODLE_USERNAME=admin -e MOODLE_PASSWORD=${moodle_password} ${docker_options}"
+        ynh_app_setting_set --key=docker_options --value="$docker_options"
+        ynh_app_setting_set --key=moodle_admin_user --value="admin"
+        ynh_app_setting_set --key=moodle_password --value="$moodle_password"
+    fi
+fi
+
+compute_docker_config "$restart_policy" "$use_data_volume" "$data_dir" "$docker_network" "$image"
 
 ynh_app_setting_set --key=image_ref --value="$image_ref"
 ynh_app_setting_set --key=image_license --value="$image_license"
@@ -123,6 +153,13 @@ if [ -n "$docker_network" ]; then
             docker network connect "$docker_network" "$app" 2>/dev/null || true
         fi
     fi
+fi
+
+#=================================================
+# REPORT MOODLE ADMIN CREDENTIALS
+#=================================================
+if is_moodle_image "$image" && [ -n "${moodle_password:-}" ]; then
+    ynh_print_info "Moodle admin account is 'admin'. Retrieve the generated password with: yunohost app setting $app moodle_password"
 fi
 
 #=================================================
