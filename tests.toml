@@ -8,3 +8,10 @@ test_format = 1.0
     args.restart_policy = "no"
     args.use_data_volume = false
     args.docker_options = ""
+
+# Note: a Moodle package_check suite is intentionally NOT defined here. The
+# tests.v1 schema can neither gate a suite to 64-bit hosts (Moodle's image is
+# 64-bit only, so the arch guard would fail a 32-bit matrix) nor inject the
+# runtime test domain into SITE_URL (Moodle pins wwwroot at install, so the
+# auto HTTP checks would redirect to localhost and fail). Moodle is validated
+# by a targeted manual install on the runner instead — see .github/PACKAGE_CHECK_CI.md.
