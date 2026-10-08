@@ -7,7 +7,7 @@ name = "Docker Container"
 description.en = "Deploy and manage a Docker container on your YunoHost server"
 description.fr = "Déployez et gérez un conteneur Docker sur votre serveur YunoHost"
 
-version = "1.1~ynh3"
+version = "1.1~ynh4"
 
 maintainers = []
 
