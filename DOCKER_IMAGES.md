@@ -118,10 +118,26 @@ yunohost app list | grep docker_container
   (The matching MariaDB instance is installed with `-e MARIADB_DATABASE=moodle -e MARIADB_USER=moodle -e MARIADB_PASSWORD=moodlepass -e MARIADB_ROOT_PASSWORD=rootpass`. Unlike Postgres, the MariaDB image can't relocate its data directory by env var, so add a persistent bind mount for `/var/lib/mysql` in that instance's **Docker Options** field — e.g. `-v /home/yunohost.app/<mariadb-instance>/mysql:/var/lib/mysql` (any persistent host path works). Without it the database is wiped when the container is recreated on restart.)
 - For a quick single-container trial only, the image also supports SQLite via `-e DB_TYPE=sqlite3` — not recommended for real use.
 - First boot runs the Moodle installer and can take several minutes.
-- **Sending email (SMTP).** Moodle has no built-in mail transport, so configure an SMTP server under *Site administration → Server → Email → Outgoing mail configuration*. To relay through the YunoHost host's own Postfix there is one container-specific gotcha:
-  - Inside the container your YunoHost domain often resolves to **IPv6 only**, but the container has **no IPv6**, so Moodle's connection to the host fails with `Network is unreachable` (errno 101) and the mail test reports *"couldn't communicate with your mail server"*. Fix it by mapping the mail host to the Docker host over IPv4: add `--add-host=YOURDOMAIN.tld:host-gateway` to the **Docker Options** field (install or upgrade). `host-gateway` resolves to the host's Docker-bridge IP, so `YOURDOMAIN.tld:587` then reaches the host's Postfix.
-  - Moodle SMTP settings for YunoHost Postfix on the submission port: **host** `YOURDOMAIN.tld:587`, **security** `TLS` (STARTTLS — required: Postfix only advertises `AUTH` *after* STARTTLS, so with security set to *None* you get `Could not authenticate`), **auth type** `LOGIN`, **username** the plain YunoHost login (not `user@domain`), **password** that user's YunoHost password.
-  - Leaving the SMTP host **blank does not work** in this image — it falls back to PHP `mail()`, and the container has no local MTA.
+- **Sending email (SMTP).** Moodle has no built-in mail transport, so it must relay through an SMTP server — typically the YunoHost host's own Postfix. **Configure this with `-e SMTP_*` Docker Options, not Moodle's admin UI:** the `erseco/alpine-moodle` entrypoint rewrites Moodle's `smtphosts`, `smtpuser`, `smtppass`, `smtpsecure` and `noreplyaddress` from environment variables on **every container start** (install *and* upgrade/restart), so values typed into the UI are overwritten on the next restart — and the image defaults point at `smtp.gmail.com` with placeholder credentials. Put these in the **Docker Options** field:
+  ```
+  --add-host=YOURDOMAIN.tld:host-gateway
+  -e SMTP_HOST=YOURDOMAIN.tld
+  -e SMTP_PORT=587
+  -e SMTP_PROTOCOL=tls
+  -e SMTP_USER=YUNOHOST_LOGIN
+  -e SMTP_PASSWORD=YUNOHOST_PASSWORD
+  -e MOODLE_MAIL_NOREPLY_ADDRESS=YUNOHOST_LOGIN@YOURDOMAIN.tld
+  ```
+  - `--add-host=YOURDOMAIN.tld:host-gateway` — inside the container the domain often resolves to **IPv6 only**, but the container has **no IPv6**, so without this the connection fails with `Network is unreachable` (errno 101). `host-gateway` pins the name to the Docker host's IPv4, so `:587` reaches the host's Postfix.
+  - `SMTP_PROTOCOL=tls` is **required** — YunoHost's Postfix only advertises `AUTH` *after* STARTTLS, so an empty/blank protocol gives `Could not authenticate`.
+  - `SMTP_USER` is the **plain YunoHost login** (not `user@domain`); `SMTP_PASSWORD` is that user's YunoHost password.
+  - `MOODLE_MAIL_NOREPLY_ADDRESS` must be an address **owned by that login** (its own `login@YOURDOMAIN.tld` or an alias). YunoHost's Postfix enforces `reject_sender_login_mismatch`, so mail from an address the authenticated user doesn't own (the default `noreply@localhost`) is rejected **even though authentication succeeded** — the symptom is auth OK but messages never arrive.
+- **Applying SMTP (or any Docker Option) to an *existing* Moodle install.** There is no Docker Options field on the upgrade form and no config panel, and `scripts/upgrade` reuses the stored value — so edit the setting directly and regenerate the service. First read the current options (the Moodle install already stores a generated `-e MOODLE_PASSWORD=…`, so **keep what's there** and append), then force an upgrade to re-render the systemd unit (replace `N` with the instance number):
+  ```
+  yunohost app setting docker_container__N docker_options            # see current value
+  yunohost app setting docker_container__N docker_options -v "<current value> --add-host=YOURDOMAIN.tld:host-gateway -e SMTP_HOST=YOURDOMAIN.tld -e SMTP_PORT=587 -e SMTP_PROTOCOL=tls -e SMTP_USER=YUNOHOST_LOGIN -e SMTP_PASSWORD=YUNOHOST_PASSWORD -e MOODLE_MAIL_NOREPLY_ADDRESS=YUNOHOST_LOGIN@YOURDOMAIN.tld"
+  yunohost app upgrade docker_container__N -F                        # -F re-runs the upgrade at the same version and recreates the container
+  ```
 
 ### `gibbon` — School management platform (GPL-3.0)
 - ⚠️ **Community, unofficial, unmaintained image** (`kerrongordon/gibbon`, last updated 2024-01, pinned to `26.0.00` while upstream Gibbon is well beyond v26). No official GibbonEdu image exists. Treat as best-effort, not vetted to the same standard as the other entries. Internal port **80**.
